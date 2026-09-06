@@ -11,6 +11,8 @@ class MDSettings extends React.Component {
 			ignoreNowPlaying: false,
 			hideNCMLogo: false,
 			disableCommentStyle: false,
+			nativeSkinLink: false,
+			menuColoring: true,
 			customPreset: JSON.parse(getSetting('custom-scheme', JSON.stringify({
 				'primary': [189, 230, 251],
 				'secondary': [],
@@ -27,6 +29,8 @@ class MDSettings extends React.Component {
 			ignoreNowPlaying: getSetting('ignore-now-playing-page', false),
 			hideNCMLogo: getSetting('hide-ncm-logo', false),
 			disableCommentStyle: getSetting('disable-comment-style', false),
+			nativeSkinLink: getSetting('native-skin-link', false),
+			menuColoring: getSetting('menu-coloring', true),
 		});
 	}
 	setScheme(scheme) {
@@ -125,6 +129,22 @@ class MDSettings extends React.Component {
 							setSetting('disable-comment-style', e.target.checked);
 						}} />
 						<label for="md-disable-comment-style" className="md-checkbox-label">禁用评论区样式</label>
+					</div>
+					<div className="md-checkbox-wrapper">
+						<input id="md-native-skin-link" type="checkbox" className="md-checkbox" checked={ this.state.nativeSkinLink } onChange={ (e) => {
+							this.setState({ nativeSkinLink: e.target.checked });
+							setSetting('native-skin-link', e.target.checked);
+							window.location.reload();
+						}} />
+						<label for="md-native-skin-link" className="md-checkbox-label">实验性:原生皮肤联动(重启生效)</label>
+					</div>
+					<div className="md-checkbox-wrapper">
+						<input id="md-menu-coloring" type="checkbox" className="md-checkbox" checked={ this.state.menuColoring } onChange={ (e) => {
+							this.setState({ menuColoring: e.target.checked });
+							setSetting('menu-coloring', e.target.checked);
+							window.location.reload();
+						}} />
+						<label for="md-menu-coloring" className="md-checkbox-label">悬浮菜单/托盘按钮染色(重启生效)</label>
 					</div>
 				</div>
 			</div>

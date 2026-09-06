@@ -13,7 +13,7 @@ import './styles/pages.scss';
 import './styles/overrides.scss';
 
 import { waitForElement, getSetting, setSetting, makeToast, chunk } from './utils.js';
-import { argb2Rgb } from './color-utils.js';
+import { argb2Rgb, rgb2Hsl } from './color-utils.js';
 import { schemePresets } from './scheme-presets.js';
 import { initSettingMenu } from './settings.js';
 import { themeFromSourceColor, QuantizerCelebi, Hct, Score, SchemeExpressive, SchemeVibrant, SchemeMonochrome, SchemeFidelity, SchemeTonalSpot, SchemeNeutral, MaterialDynamicColors } from '@material/material-color-utilities';
@@ -207,6 +207,56 @@ const refreshTheme = () => {
 	updateAccentColor(colors.secondary, 'secondary');
 	updateAccentColor(colors.bg, 'bg');
 	updateAccentColor(colors.bgDarken, 'bg-darken');
+
+	applyNativeAppearance(colors.primary);
+};
+
+// ---------------------------------------------------------------- 原生外观联动(D3=实验开关)
+// Spike S2 实测:channel.call('app.loadSkinPackets', cb, [type, name, extra]),
+// 网易云启动时自调 ("common","common",{btn_color:{h,s,l}}),btn_color 为 HSL(h 0-360, s/l 0-100)。
+let lastNativeColorKey = '';
+const applyNativeAppearance = (primary) => {
+	if (getSetting('native-skin-link', false) !== true) return;
+	try {
+		const key = primary.join(',');
+		if (key === lastNativeColorKey) return; // 去重,防止与网易云自身更新形成循环
+		lastNativeColorKey = key;
+		const [h, s, l] = rgb2Hsl(primary);
+		channel.call('app.loadSkinPackets', () => {}, ['common', 'common', {
+			btn_color: { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) }
+		}]);
+	} catch (e) { /* 原生接口失败静默跳过 */ }
+};
+
+// ---------------------------------------------------------------- 菜单染色(D8,S3 实测 payload 为明文)
+// winhelper.updateMenu / winhelper.popupMenu 的 args[1][0].content 是菜单 JSON 字符串:
+//   文本项:image_color = "#AARRGGBB";按钮组:url 内 svg_color='#AARRGGBB'(normal=b3/hot=ff/disabled=4d)。
+// 策略:保留原 alpha,后 6 位 RGB 替换为主题主色。
+const primaryRGBHex = () => {
+	const c = getActiveColors().primary ?? [103, 80, 164];
+	return c.map((v) => v.toString(16).padStart(2, '0')).join('').toUpperCase();
+};
+let menuChannelPatched = false;
+const hookChannelMenus = () => {
+	if (getSetting('menu-coloring', true) !== true) return;
+	if (menuChannelPatched || !window.channel || !channel.call) return;
+	menuChannelPatched = true;
+	const orig = channel.call;
+	channel.call = function (name, ...args) {
+		try {
+			if (name === 'winhelper.updateMenu' || name === 'winhelper.popupMenu') {
+				const menuObj = args[1]?.[0];
+				if (menuObj && typeof menuObj.content === 'string' && menuObj.content.indexOf('#') !== -1) {
+					const rgb = primaryRGBHex();
+					// 保留原 8 位色中的 alpha(前 2 位),RGB 部分替换为主题主色
+					menuObj.content = menuObj.content
+						.replace(/("image_color":"#)([0-9a-fA-F]{2})([0-9a-fA-F]{6})/g, `$1$2${rgb}`)
+						.replace(/(svg_color='#)([0-9a-fA-F]{2})([0-9a-fA-F]{6})/g, `$1$2${rgb}`);
+				}
+			}
+		} catch (e) { /* 染色失败不影响原调用 */ }
+		return orig.call(this, name, ...args);
+	};
 };
 
 // ---------------------------------------------------------------- 方案应用
@@ -427,12 +477,10 @@ const boot = () => {
 	updateGreeting();
 	setInterval(updateGreeting, 30000);
 
+	hookChannelMenus(); // 菜单染色(D8):尽早挂,晚于 applyScheme 以取到主色
 	setupCoverWatcher();
 	probeAndWatchAppThemeMode();
 	injectSettingsEntry();
-
-	// D8 留桩:v2 视 Spike S3(updateMenu/popupMenu payload)结论决定是否实现菜单染色
-	// hookChannelMenus() {}
 };
 
 if (document.readyState === 'loading') {
