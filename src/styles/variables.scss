@@ -1,0 +1,26 @@
+// variables.scss — MD 主题变量契约与默认值
+// 大部分换肤由 theme-tokens.js 生成的 --color* 令牌覆盖完成,
+// 这里只维护插件自身的 --md-* 变量与亮暗映射。
+
+body.material-you-theme {
+	// 2.x 兼容:设置面板高度计算仍引用
+	--bottombar-height: 90px;
+
+	// 亮暗模式 → 页面色(供插件自身样式统一消费,避免处处写亮暗分支)
+	--md-page-bg: var(--md-dynamic-light-bg);
+	--md-page-bg-darken: var(--md-dynamic-light-bg-darken);
+	--md-page-primary: var(--md-dynamic-light-primary);
+	--md-page-fg: var(--md-accent-color-secondary);
+}
+
+body.material-you-theme.md-dark {
+	--md-page-bg: var(--md-dynamic-dark-bg);
+	--md-page-bg-darken: var(--md-dynamic-dark-bg-darken);
+	--md-page-primary: var(--md-dynamic-dark-primary);
+	--md-page-fg: var(--md-accent-color-secondary);
+}
+
+// 设置面板保持可读:面板自身配色跟随插件方案(与客户端令牌解耦)
+#md-theme-setting {
+	--md-accent-color: var(--md-accent-color, rgb(103, 80, 164));
+}

@@ -1,0 +1,23 @@
+// nav.scss — 顶栏(#page_pc_main_nav,含搜索/头像/功能图标/窗口控制)
+// 注意:3.1 的 "nav" 是顶栏而非左侧栏(左侧栏为 LeftScrollContainer)。
+// 侧栏配色已由 --colorSidebar* 令牌全局生效。
+
+// 设置入口按钮:与顶栏原生图标同尺寸(24px),防止换行被裁
+#page_pc_main_nav .md-settings-menu-container {
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px !important;
+	height: 24px !important;
+	margin: 0 4px;
+	overflow: visible;
+}
+#page_pc_main_nav #md-theme-setting-btn {
+	width: 24px !important;
+	height: 24px !important;
+	> div {
+		width: 18px !important;
+		height: 18px !important;
+	}
+}

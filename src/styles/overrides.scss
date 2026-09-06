@@ -1,0 +1,25 @@
+// overrides.scss — cmd-* 组件与结构的少量修正
+// 大面积配色已由令牌完成;这里只处理令牌覆盖不到的细节。
+
+// 隐藏网易云 Logo(D2 首保留的界面项;锚点:侧栏顶部 logo 图标类)
+body.material-you-theme.hide-ncm-logo {
+	#page_pc_main_nav .cmd-icon-logo,
+	#page_pc_main_tab .cmd-icon-logo {
+		display: none !important;
+	}
+}
+
+// 自绘 toast(替代 2.x u-result 体系)
+.md-toast {
+	position: fixed;
+	left: 50%;
+	bottom: 110px;
+	transform: translateX(-50%);
+	z-index: 3000;
+	background: var(--md-page-bg-darken, #222);
+	color: var(--md-page-fg, #fff);
+	border-radius: 24px;
+	padding: 10px 20px;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+	font-size: 13px;
+}

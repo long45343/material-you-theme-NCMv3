@@ -1,0 +1,19 @@
+{
+    "manifest_version": 1,
+    "name": "Material You Theme (NCM v3)",
+    "slug": "MaterialYouThemeNCMv3",
+    "author": "long45343",
+    "author_links": ["https://github.com/long45343"],
+    "description": "Material You 主题(网易云 3.x 适配版)| 动态取色 | 支持切换配色 | 仅在 3.1.39 测试",
+    "preview": "preview.gif",
+    "version": "3.0.0-alpha.1",
+    "type": "theme",
+    "ncm3-compatible": true,
+    "injects": {
+        "Main": [
+            {
+                "file": "main.js"
+            }
+        ]
+    }
+}

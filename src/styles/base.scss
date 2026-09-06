@@ -1,0 +1,15 @@
+// base.scss — 全局基础:滚动条与平滑过渡
+// 换肤主力在 theme-tokens.js 的令牌覆盖,这里只做基础质感。
+
+body.material-you-theme {
+	transition: background-color 0.3s ease;
+}
+
+// 滚动条跟随强调色
+body.material-you-theme ::-webkit-scrollbar-thumb {
+	background-color: rgba(var(--md-accent-color-secondary-rgb), 0.35);
+	border-radius: 4px;
+	&:hover {
+		background-color: rgba(var(--md-accent-color-secondary-rgb), 0.55);
+	}
+}
