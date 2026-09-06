@@ -92,7 +92,8 @@ export const buildTokenCSS = (scheme, mode) => {
 	out.push(`--colorSidebar13: ${rgba(white, 1)} !important;`);
 
 	// ---- 背景 ----
-	out.push(`--colorBackground: ${rgba(bg, 1)} !important;`);
+	// E7:浅色页面底带极浅灰,卡片(--colorBackgroundWhite=白)形成 MD3 分层
+	out.push(`--colorBackground: ${rgba(dark ? bg : mix(bg, [226, 229, 233], 0.55), 1)} !important;`);
 	out.push(`--colorBackgroundWhite: ${rgba(dark ? bgDarken : white, 1)} !important;`);
 
 	// ---- Function:灰阶成员跟随前景,红心/播放态跟随主色,其余保留 ----
