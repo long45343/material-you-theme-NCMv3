@@ -23,3 +23,13 @@ body.material-you-theme.hide-ncm-logo {
 	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
 	font-size: 13px;
 }
+
+// 播放条红心数徽标跟随主题色(原生为固定红)
+body.material-you-theme [class*="red-star"] svg,
+body.material-you-theme [class*="red-star"] svg path {
+	fill: var(--colorPrimary1) !important;
+}
+body.material-you-theme [class*="red-star"] [style*="color"],
+body.material-you-theme [class*="red-star"] .cmd-typography {
+	color: var(--colorPrimary1) !important;
+}

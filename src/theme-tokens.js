@@ -32,10 +32,12 @@ export const buildTokenCSS = (scheme, mode) => {
 	const bg = scheme.bg;
 	const bgDarken = scheme.bgDarken ?? scheme.bg;
 
-	// 前景色:亮色模式 = 深色文字(基于 bg-darken 加深),暗色模式 = 浅色文字(接近 bg 提亮)
-	const fgBase = dark
-		? mix(bg, [255, 255, 255], 0.92)
-		: mix(bgDarken, [0, 0, 0], 0.78);
+	// 前景色:亮色模式 = 深色文字(基于 bg-darken 加深),暗色模式 = 浅色文字(接近 bg 提亮);
+	// 混入 6% 主色色调,符合 MD3 onSurface 的微带色规范
+	const fgBase = (() => {
+		const base = dark ? mix(bg, [255, 255, 255], 0.92) : mix(bgDarken, [0, 0, 0], 0.78);
+		return mix(base, primary, 0.06);
+	})();
 	// 侧栏前景与主前景保持同一族
 	const sidebarFgBase = fgBase;
 
