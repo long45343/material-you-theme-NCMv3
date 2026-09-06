@@ -1,50 +1,44 @@
-# HANDOFF — 新会话交接(2026-09-07)
+# HANDOFF — 新会话交接(2026-09-07,第二轮完成后)
 
 ## 项目一句话
 
 BetterNCM/chromatic 主题插件 `MaterialYouThemeNCMv3`,为网易云 **3.1.39** 带来 Material You 动态取色。**核心机制:网易云 3.1 把全部颜色(81 个 `--color*` 令牌)挂在 `<html>` inline style 上,本插件用 MD3 引擎配色以 `!important` 在 html 重定义这些令牌实现全局换肤。**
 
-- 仓库:`D:\EDCs\code\material-you-theme-NCMv3`(remote: github.com/long45343/material-you-theme-NCMv3,已推送)
+- 仓库:`D:\EDCs\code\material-you-theme-NCMv3`(remote: github.com/long45343/material-you-theme-NCMv3)
 - 数据目录:`C:\Users\Manet_Kirby\Documents\betterncm`(环境变量 BETTERNCM_PROFILE)
-- 完整规格:`spec/ADAPT-SPEC.md`(v1.0,含第一轮 E1-E13 决策)、`spec/ROUND2-SPEC.md` + `ROUND2-DECISIONS.md`(本轮 E1-E8)
+- 决策与验证记录:`docs/FIX-CHECKLIST.md`(第一轮)+ `docs/ROUND2-FIX-CHECKLIST.md`(第二轮,含 BNCM 原生层事故与打点结论)——**新会话先读这两个文件**
 
 ## 已验证可用(不要动坏)
 
-1. 令牌层换肤:`theme-tokens.js` — `--color*` 81 个 + `--reset-*` 31 个双层令牌全部映射,深浅双模式;
-2. 动态取色:多候选封面链(播放条小封面 `#page_pc_mini_bar img` 为首位)+ Celebi/Score;
-3. 亮暗 auto:监听 html style 属性、读 `--colorBackground` 亮度 = 跟随网易云自身亮暗(网易云 web 层没有深色模式,酷炫黑皮肤不改令牌);
-4. 设置面板:顶栏图标行按钮(onConfig 兜底)、22 预设、取色来源;
-5. 皮肤切换按钮隐藏;BNCM 卡片暗色兜底;红心徽标主题化;E7 浅色分层(页面底微灰+白卡)。
+1. 令牌层换肤:`theme-tokens.js` — 81 令牌 + 31 reset 双层;**getThemeCSSFromColor 有 E2 缓存(键=取色色值|方案名,自然失效)**;
+2. 动态取色多候选链(播放条小封面首位);
+3. 亮暗 auto 跟随;
+4. 设置面板:顶栏图标行按钮 + **E4-B 面板 memo**(DynamicSchemeSet 家族比较器 + SchemeItem memo——改面板代码时注意保持 props 引用稳定,否则 memo 全部失效);
+5. **BNCM 音符按钮已纯 CSS 归位**(nav.scss:克隆按钮 absolute 锚在 ⚙ 的 BadgeWrapper 右外 22px;CEF 91 不支持 :has(),别用);
+6. **E3c 背景渐变走合成器**:body 颜色瞬变 + `#md-bg-fader`(旧背景色层,base.scss)opacity 1→0 交叉淡出——切方案/切歌的背景渐变在合成线程跑满 180Hz。**不要改回 background-color 过渡**(主线程绘制,高刷屏锁 50-60fps);
+7. **E3 过渡策略**:仅 body(瞬变,靠 fader 渐变)与 .cmd-button 保留 transition;卡片家族已加 `content-visibility: auto`(视口外跳过重算/绘制)。
 
-## 当前 HEAD 状态(96b51cc,已推送)——回滚版
+## 性能结论(第二轮打点实测,勿重复劳动)
 
-最后一轮引入了两个回归,**已回滚**:
+- 插件 JS 每次切换全程 **0.4ms**(refreshTheme 阶段打点 → window.__mdStageStats,recon meta.json 转储;探针 perf.txt 记 longtask/rAF 间隙);
+- 切方案剩余 ~55-60ms 停顿 = **Chromium 全文档样式重算+绘制,固有成本**,content-visibility 已把掉帧压到 1~2 个(多次零掉帧);
+- 切歌实际 151ms(取色量化 + 换肤),被封面动画掩盖,用户不感知——别"修"它。
 
-- ~~refreshTheme 内 dispatch md-dominant-color-change~~ → 每次切换触发 18 个方案预览组件全量重算 = 切主题卡顿严重;
-- ~~relocateBncmEntry 搬移 chromatic 音符按钮~~ → 该按钮是 **React 管理的节点**,JS 搬移引发 React 协调冲突 → **首次启动崩溃,二次启动 localStorage 损坏主题被重置**。
+## 事故教训(BNCM 原生层,详见 ROUND2 文件"插曲")
 
-回滚后状态:稳定,但 chromatic 音符入口回到行下方原位(未归位)。**待办第一项:验证回滚版连续两次冷启动不崩溃、主题设置保留。**
+- **禁止在事件热路径上写文件**(recon v2.3 教训:每次令牌提交都写盘 → 写盘突发踩中 BNCM 原生层线程同步 bug → 连环崩溃/原版启动);探针类工具一律内存缓冲+定时统一落盘;
+- **杀进程后等 ≥8s 再启动、不并发多开**(多实例 remove_all 竞争是 chromatic 已知崩溃源);
+- 探针/侦察件:MD33Recon v2.4.1(源码 `material-you-theme-netease/.reversing/MD33Recon/`,deploy = python 打 zip 到 plugins/)。
 
-## 下一步工作清单(按序,均未开始)
+## 环境坑(仍然有效)
 
-1. ~~**回归验证**~~ ✅ 已完成(2026-09-07,见 docs/FIX-CHECKLIST.md 验证记录):根因是 96b51cc 回滚漏删了 `relocateBncmEntry()` 调用(ReferenceError 每次启动杀死 initSettingMenu);已清创+关键路径前置,5 次启动无一崩溃、scheme 保留。剩用户截图兜底 → 之后进入第二轮 D1-A(BNCM 归位,决策见 FIX-CHECKLIST.md);
-2. **R1 行高亮横跨整行**(E1 保留原样/E2 纯 CSS 上移):发现步 = recon elementFromPoint 命中歌单页曲目行标题列(x≈500)与时长列(x≈1400)各走祖先找公共行元素;然后 CSS 把 hover 背景/圆角从内层上移到行元素;
-3. **BNCM 入口归位改走 E3-B 纯 CSS**(禁用 JS 搬移!React 节点):已决策 D1-A = 只读探针(getBoundingClientRect)+ CSS 变量 + position:fixed;recon v2.2 的 bncmbtn.txt 已支持 `title="BetterNCM"` 探针备料;
-4. **R4-b 歌词 MD3 强对比**(E8):`.TrackDisplayContainer` 区域,当前行主色+1.15x+加粗;
-5. **R5 验证**:用户复现"普通主题→动态主题"路径,确认配色正常(根因 `mdActivePreset` 残留已修,commit 0678567)。
+1. heredoc 里 `\n` 会被吃成换行 → 侦察脚本字符串不用 `\n`;
+2. taskkill 可能静默失败 → 杀完必须验证进程数=0(PowerShell `@(Get-Process ...).Count`,**tasklist+grep 计数不可靠**);
+3. zip 部署用 `scripts/deploy.py`(python zipfile),不用 Compress-Archive;
+4. 部署顺序:taskkill → 等 8s → deploy → 启动;
+5. React 管理的 DOM 节点禁止 JS 搬移;自建节点带重挂守卫;
+6. CEF = **Chromium 91**:`:has()` 不可用(整条规则会被丢弃),View Transitions 不可用。
 
-## 环境坑(新会话必读,全部踩过)
+## 下一步(第三轮)
 
-1. **heredoc 里的 `\n` 会被吃成真实换行** → 侦察脚本字符串一律不用 `\n`(用 `' | '`),python 写文件用 `chr(10)` 或先替换;
-2. **taskkill 可能静默失败**(输出被重定向看不到"拒绝访问")→ 杀完必须 tasklist 验证进程数=0 再部署,否则单实例导致"重启"无效、旧插件继续跑;
-3. **Compress-Archive 的 zip chromatic 解不了** → 部署用 `scripts/deploy.py`(python zipfile);
-4. **部署顺序**:先 taskkill → 再 deploy(.plugin 被运行中客户端锁住)→ 再启动;
-5. **侦察插件改补丁必翻车**(多层转义)→ 改用 Write 全量重写,改完必须 `node --check`;
-6. **React 管理的 DOM 节点不能 JS 搬移**(协调冲突→崩溃),自建节点要带重挂守卫;
-7. 令牌改动跑 `/tmp/tokentest.mjs` 风格的单测(node 直跑 buildTokenCSS 双模式)。
-
-## 侦察工具
-
-- MD33Recon v2.1(源码 `material-you-theme-netease/.reversing/MD33Recon/`,部署在数据目录 plugins/)。
-- v2.1 是精简版:boot/meta/probeBncm(DOM 搜 bncm|betterncm)。**已知缺口**:probeBncm 的调用接线已修但当时没重启验证;音符按钮的类名搜索落空(它无 bncm 类名,改用 `title="BetterNCM"` 或坐标探针)。
-- 用户模式:**视觉验证由用户截图完成,需要用户操作时用 PowerShell MessageBox 弹窗提示**。
+用户将进行 **UI 调整**(具体需求待用户提出)。动手前建议先读 ROUND2 文件的"性能结论"——任何 UI 改动都别引入大表面颜色过渡或热路径写盘。

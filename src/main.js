@@ -17,7 +17,7 @@ import { argb2Rgb, rgb2Hsl } from './color-utils.js';
 import { schemePresets } from './scheme-presets.js';
 import { initSettingMenu } from './settings.js';
 import { themeFromSourceColor, QuantizerCelebi, Hct, Score, SchemeExpressive, SchemeVibrant, SchemeMonochrome, SchemeFidelity, SchemeTonalSpot, SchemeNeutral, MaterialDynamicColors } from '@material/material-color-utilities';
-import { buildTokenCSS } from './theme-tokens.js';
+import { buildTokenCSS, rgba, mix as mixRgb } from './theme-tokens.js';
 
 const migrateSettings = () => {
 	if (getSetting('scheme') == 'dynamic-auto') {
@@ -207,6 +207,20 @@ const getActiveColors = () => {
 	return { primary: parse('primary'), secondary: parse('secondary'), bg: parse('bg'), bgDarken: parse('bg-darken') };
 };
 
+// E3c:背景交叉淡出层(样式见 base.scss #md-bg-fader)。
+// 旧背景色由上一轮 refreshTheme 记录,避免 getComputedStyle 读取(那会强制同步整文档样式重算)。
+let lastFaderBg = null;
+const ensureBgFader = () => {
+	let f = document.getElementById('md-bg-fader');
+	if (!f && document.body) {
+		f = document.createElement('div');
+		f.id = 'md-bg-fader';
+		document.body.appendChild(f);
+	}
+	return f;
+};
+const bgTokenColor = (colors, dark) => rgba(dark ? colors.bg : mixRgb(colors.bg, [226, 229, 233], 0.55), 1);
+
 const refreshTheme = () => {
 	const __t0 = performance.now();
 	updateDynamicTheme();
@@ -219,6 +233,22 @@ const refreshTheme = () => {
 		const fallback = (n) => defaultDynamicColor[`--md-dynamic-${mode}-${n}`].match(/\d+/g).slice(0, 3).map(Number);
 		colors = { primary: fallback('primary'), secondary: fallback('secondary'), bg: fallback('bg'), bgDarken: fallback('bg-darken') };
 	}
+
+	// E3c 起点状态(与令牌同帧应用,无读取开销):fader 置为旧背景色、不透明、无过渡;
+	// 下一帧起 transition 生效,opacity 1→0 在合成线程上以显示器刷新率交叉淡出
+	const fader = ensureBgFader();
+	const newBgToken = colors.bg ? bgTokenColor(colors, mode === 'dark') : null;
+	if (fader && lastFaderBg && newBgToken && lastFaderBg !== newBgToken) {
+		fader.style.transition = 'none';
+		fader.style.backgroundColor = lastFaderBg;
+		fader.style.opacity = '1';
+		requestAnimationFrame(() => {
+			fader.style.transition = 'opacity 0.25s ease';
+			fader.style.opacity = '0';
+		});
+	}
+	lastFaderBg = newBgToken;
+
 	tokenStyleController.innerHTML = buildTokenCSS(colors, mode);
 	const __t3 = performance.now();
 

@@ -16,8 +16,8 @@ const FOREGROUND_ALPHA = [1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.25, 0.1, 0.06,
 
 export const rgba = ([r, g, b], a = 1) => `rgba(${r},${g},${b},${a})`;
 
-// 在两个颜色之间按比例混合(t=0 → a,t=1 → b)
-const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
+// 在两个颜色之间按比例混合(t=0 → a,t=1 → b);E3c 背景淡出层需要与 --colorBackground 同式
+export const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
 
 /**
  * 生成整套 3.1 令牌的 CSS 文本。

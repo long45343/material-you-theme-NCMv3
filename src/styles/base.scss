@@ -17,8 +17,20 @@ body.material-you-theme .cmd-button {
 	transition: background-color 0.25s ease, color 0.25s ease;
 }
 
-// E3b(用户追加):body 背景单独保留渐变 —— 单一大表面的纯色填充每帧代价低,
-// 卡片/面板等其余大面维持瞬变(E3 主修),换歌/切方案时背景平滑过渡。
+// E3c(替代 E3b):背景渐变改走合成器。主线程绘制的 background-color 过渡每帧都要整窗重绘,
+// 在高刷屏(180Hz)上只能跑到 50-60fps;改为 body 本体颜色瞬变 +
+// #md-bg-fader(旧背景色,画在内容层之下)以 opacity 1→0 交叉淡出
+// —— opacity 动画由合成线程驱动、跟随显示器刷新率,主线程重算/掉帧不再影响丝滑度。
+// isolation:isolate 使 body 成为堆叠上下文:fader(负 z-index)画在 body 背景之上、内容之下。
 body.material-you-theme {
-	transition: background-color 0.25s ease;
+	isolation: isolate;
+}
+body.material-you-theme #md-bg-fader {
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	pointer-events: none;
+	opacity: 0;
+	will-change: opacity;
+	transition: opacity 0.25s ease;
 }
