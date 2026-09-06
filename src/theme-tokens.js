@@ -31,6 +31,7 @@ export const buildTokenCSS = (scheme, mode) => {
 	const secondary = scheme.secondary ?? scheme.primary;
 	const bg = scheme.bg;
 	const bgDarken = scheme.bgDarken ?? scheme.bg;
+	const surface = dark ? mix(bg, [255, 255, 255], 0.07) : [255, 255, 255]; // 主题表面色(卡片层)
 
 	// 前景色:亮色模式 = 深色文字(基于 bg-darken 加深),暗色模式 = 浅色文字(接近 bg 提亮);
 	// 混入 6% 主色色调,符合 MD3 onSurface 的微带色规范
@@ -122,7 +123,6 @@ export const buildTokenCSS = (scheme, mode) => {
 
 	// ---- reset 系(第二令牌层:JS 注入的静态亮色 RGB 三元组,卡片/文字大量消费)----
 	// 深色下必须重映射,否则卡片永远是白底(rgba(var(--reset-white),1))
-	const surface = dark ? mix(bg, [255, 255, 255], 0.07) : [255, 255, 255];
 	out.push(`--reset-white: ${surface.join(',')} !important;`);
 	out.push(`--reset-black: ${dark ? fgBase.join(',') : '0,0,0'} !important;`);
 	// grey 阶:grey-0(最浅表面)→ grey-9(正文),dark 下从深表面渐变到浅前景
