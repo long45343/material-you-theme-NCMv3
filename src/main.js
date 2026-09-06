@@ -446,7 +446,7 @@ const injectSettingsEntry = () => {
 				anchor.insertBefore(container, divider && divider.parentElement === anchor ? divider : null);
 			}
 		};
-		new MutationObserver(reattach).observe(nav, { childList: true, subtree: true });
+		new MutationObserver(() => { reattach(); relocateBncmEntry(); }).observe(nav, { childList: true, subtree: true });
 		reattach();
 
 			// 隐藏网易云皮肤切换入口(主题启用时与主题冲突;连同未读红点)
@@ -456,7 +456,16 @@ const injectSettingsEntry = () => {
 			const btn = icon.closest('[class*="BadgeWrapper"]') ?? icon.closest('.cmd-badge') ?? icon.closest('button') ?? icon;
 			btn.style.display = 'none';
 		};
+		// BNCM(chromatic)管理器入口归位:移入图标行,排在我们按钮之后
+		const relocateBncmEntry = () => {
+			const b = document.querySelector('[title="BetterNCM"]');
+			if (!b) return;
+			if (b.parentElement !== nav || container.nextElementSibling !== b) {
+				nav.insertBefore(b, container.nextElementSibling);
+			}
+		};
 		hideSkinEntry();
+		relocateBncmEntry();
 		new MutationObserver(hideSkinEntry).observe(nav, { childList: true, subtree: true });
 
 	// React/ReactDOM 由客户端 vendor 挂载,需等待就绪

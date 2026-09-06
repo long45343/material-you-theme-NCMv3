@@ -28,3 +28,20 @@
 		height: 20px !important;
 	}
 }
+
+// BNCM(chromatic)管理器入口:归位到图标行,与原生图标同规格
+body.material-you-theme #page_pc_main_nav [title="BetterNCM"] {
+	position: static !important;
+	display: inline-flex !important;
+	align-items: center;
+	justify-content: center;
+	width: 28px !important;
+	height: 28px !important;
+	margin: 0 6px;
+	font-size: 20px !important;
+	vertical-align: middle;
+	svg {
+		width: 20px;
+		height: 20px;
+	}
+}
