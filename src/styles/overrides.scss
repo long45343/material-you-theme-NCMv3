@@ -33,3 +33,13 @@ body.material-you-theme [class*="red-star"] [style*="color"],
 body.material-you-theme [class*="red-star"] .cmd-typography {
 	color: var(--colorPrimary1) !important;
 }
+
+// 深色下:榜单精选卡/各类卡片背景被 styled-components 运行时注入硬编码白,
+// 令牌层覆盖不到,这里按结构类名兜底为主题表面色(白字在深面上自然可读)
+body.material-you-theme.md-dark {
+	[class*="StyledRankCard"],
+	[class*="CardWrapper"],
+	[class*="WrapperCard"] {
+		background: var(--colorBackgroundWhite) !important;
+	}
+}

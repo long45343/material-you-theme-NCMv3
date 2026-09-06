@@ -120,5 +120,40 @@ export const buildTokenCSS = (scheme, mode) => {
 	out.push(`--colorMask4: rgba(0,0,0,0.1) !important;`);
 	out.push(`--colorMask5: rgba(0,0,0,0) !important;`);
 
+	// ---- reset 系(第二令牌层:JS 注入的静态亮色 RGB 三元组,卡片/文字大量消费)----
+	// 深色下必须重映射,否则卡片永远是白底(rgba(var(--reset-white),1))
+	const surface = dark ? mix(bg, [255, 255, 255], 0.07) : [255, 255, 255];
+	out.push(`--reset-white: ${surface.join(',')} !important;`);
+	out.push(`--reset-black: ${dark ? fgBase.join(',') : '0,0,0'} !important;`);
+	// grey 阶:grey-0(最浅表面)→ grey-9(正文),dark 下从深表面渐变到浅前景
+	const greyOld = { 0: 249, 1: 230, 2: 198, 3: 167, 5: 107, 6: 85, 7: 65, 8: 46, 9: 28 };
+	const greyTable = { 0: '249,249,249', 1: '230,232,234', 2: '198,202,205', 3: '167,171,176', 5: '107,112,117', 6: '85,91,97', 7: '65,70,76', 8: '46,50,56', 9: '28,31,35' };
+	for (const [n, old] of Object.entries(greyOld)) {
+		let rgb;
+		if (!dark) {
+			rgb = greyTable[n].split(',').map(Number);
+		} else {
+			const t = (249 - old) / 221;
+			rgb = mix(surface, fgBase, t);
+		}
+		out.push(`--reset-grey-${n}: ${rgb.join(',')} !important;`);
+	}
+	// 彩色系:浅底档(-0/-1/-2)在 dark 下压深,主色档保持原值
+	const colorFamilies = {
+		blue: { lights: { 0: [234, 245, 255], 1: [203, 231, 254], 2: [152, 205, 253] }, base: [0, 98, 214], solids: { 6: '0,98,214', 7: '0,79,179', 8: '0,61,143', 9: '0,44,107' } },
+		green: { lights: { 1: [208, 240, 209], 2: [164, 224, 167] }, base: [59, 179, 70], solids: { 5: '59,179,70', 6: '48,149,59', 7: '37,119,47' } },
+		orange: { lights: { 0: [255, 248, 234], 1: [254, 238, 204], 2: [254, 217, 152] }, base: [252, 136, 0], solids: { 5: '252,136,0', 6: '210,103,0', 7: '168,74,0' } },
+		red: { lights: { 0: [254, 242, 237], 1: [254, 221, 210], 2: [253, 183, 165] }, base: [249, 57, 32], solids: { 5: '249,57,32', 6: '213,37,21', 7: '178,20,12' } },
+	};
+	for (const [name, fam] of Object.entries(colorFamilies)) {
+		for (const [n, orig] of Object.entries(fam.lights)) {
+			const rgb = dark ? mix(fam.base, bg, 0.8) : orig;
+			out.push(`--reset-${name}-${n}: ${rgb.join(',')} !important;`);
+		}
+		for (const [n, v] of Object.entries(fam.solids)) {
+			out.push(`--reset-${name}-${n}: ${v} !important;`);
+		}
+	}
+
 	return `html {\n${out.map((l) => '\t' + l).join('\n')}\n}`;
 };
