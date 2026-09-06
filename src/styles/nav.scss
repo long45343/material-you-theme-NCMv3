@@ -29,19 +29,27 @@
 	}
 }
 
-// BNCM(chromatic)管理器入口:归位到图标行,与原生图标同规格
+// BNCM(chromatic)管理器入口:归位到图标行,与原生 ⚙ 同规格(20×20)
+// D-rev-A 最终形态:克隆与 ⚙ 同住 BadgeWrapper,其宽度随徽章状态在 20-40px 波动,
+// 且 Chromium 91 不支持 :has()(无法按"含克隆"条件加宽父容器)。
+// 方案:wrapper 提为 relative(零布局影响),克隆绝对定位锚在其右外侧 ——
+// 视觉上紧贴 ⚙ 右侧、落在 ⚙ 与我们按钮之间的既有间隙里,零 DOM 干预。
+body.material-you-theme #page_pc_main_nav div[class*="BadgeWrapper_"] {
+	position: relative;
+}
 body.material-you-theme #page_pc_main_nav [title="BetterNCM"] {
-	position: static !important;
+	position: absolute !important;
+	left: 22px !important;
+	top: 0 !important;
 	display: inline-flex !important;
 	align-items: center;
 	justify-content: center;
-	width: 28px !important;
-	height: 28px !important;
-	margin: 0 6px;
-	font-size: 20px !important;
-	vertical-align: middle;
+	width: 20px !important;
+	height: 20px !important;
+	margin: 0 !important;
+	font-size: 16px !important;
 	svg {
-		width: 20px;
-		height: 20px;
+		width: 16px;
+		height: 16px;
 	}
 }

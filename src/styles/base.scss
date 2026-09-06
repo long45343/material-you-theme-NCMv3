@@ -1,9 +1,7 @@
-// base.scss — 全局基础:滚动条与平滑过渡
+// base.scss — 全局基础:滚动条与按钮过渡
 // 换肤主力在 theme-tokens.js 的令牌覆盖,这里只做基础质感。
-
-body.material-you-theme {
-	transition: background-color 0.3s ease;
-}
+// E3(用户变体"按钮渐变+其余瞬变"):大表面(body/footer/卡片)一律瞬变——
+// 实测(E1 baseline)每次切方案 60-75ms 长任务 + 最大 58-103ms 帧冻结,主因即大表面颜色过渡的全页连续重绘。
 
 // 滚动条跟随强调色
 body.material-you-theme ::-webkit-scrollbar-thumb {
@@ -14,9 +12,7 @@ body.material-you-theme ::-webkit-scrollbar-thumb {
 	}
 }
 
-// 切歌/换方案时颜色过渡——只限少数大表面(广域过渡会在主题切换时引发全页重绘卡顿)
-body.material-you-theme,
-body.material-you-theme footer,
+// 仅原生按钮保留颜色渐变(播放条三键/顶栏图标等,小元素,每帧代价可忽略)
 body.material-you-theme .cmd-button {
 	transition: background-color 0.25s ease, color 0.25s ease;
 }

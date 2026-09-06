@@ -95,11 +95,27 @@ export const getDynamicThemeColor = () => {
 		return (color[0] << 16 >>> 0) | (color[1] << 8 >>> 0) | color[2];
 	}
 }
+// E2:引擎结果缓存 —— 键 = 取色源解析出的颜色 + 方案名。
+// 换歌/取色源切换/自定义改色都会改变解析色 → 键自然失效,无需手动清理。
+const themeCSSCache = new Map();
 export const getThemeCSSFromColor = (schemeName = null) => {
-	let color = getDynamicThemeColor();
+	const color = getDynamicThemeColor();
 	if (!color) {
 		return defaultDynamicColor;
 	}
+	const cacheKey = String(color) + '|' + (schemeName ?? '');
+	if (themeCSSCache.has(cacheKey)) {
+		return themeCSSCache.get(cacheKey);
+	}
+	const result = computeThemeCSSFromColor(color, schemeName);
+	if (result) {
+		themeCSSCache.set(cacheKey, result);
+		if (themeCSSCache.size > 40) themeCSSCache.clear();
+	}
+	return result;
+};
+
+const computeThemeCSSFromColor = (color, schemeName) => {
 	if (!schemeName) {
 		schemeName = window.mdScheme ?? 'dynamic-default-auto';
 	}
