@@ -96,7 +96,7 @@ export const buildTokenCSS = (scheme, mode) => {
 
 	// ---- Function:灰阶成员跟随前景,红心/播放态跟随主色,其余保留 ----
 	out.push(`--colorFunction1: ${rgba(fgBase, 0.5)} !important;`);
-	out.push(`--colorFunction2: ${rgba(white, 1)} !important;`);
+	out.push(`--colorFunction2: ${rgba(dark ? surface : white, 1)} !important;`);
 	out.push(`--colorFunction3: ${rgba(white, 0.8)} !important;`);
 	out.push(`--colorFunction4: ${rgba(white, 1)} !important;`);
 	out.push(`--colorFunction5: ${rgba(fgBase, 0.06)} !important;`);

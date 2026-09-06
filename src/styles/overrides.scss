@@ -43,3 +43,28 @@ body.material-you-theme.md-dark {
 		background: var(--colorBackgroundWhite) !important;
 	}
 }
+
+// MD3 卡片层:统一圆角与悬浮过渡(榜单卡/歌单卡/推荐行卡)
+body.material-you-theme {
+	[class*="StyledRankCard"],
+	[class*="CardWrapper"],
+	[class*="WrapperCard"],
+	[class*="containerCls"] {
+		border-radius: 10px !important;
+		overflow: hidden;
+		transition: background-color 0.2s ease, box-shadow 0.2s ease;
+	}
+	// 悬浮:MD3 表面抬升(浅色微灰/深色微亮),不再跳白
+	&.md-light [class*="CardWrapper"]:hover,
+	&.md-light [class*="WrapperCard"]:hover {
+		background-color: rgba(var(--md-accent-color-secondary-rgb), 0.06) !important;
+	}
+	&.md-dark [class*="CardWrapper"]:hover,
+	&.md-dark [class*="WrapperCard"]:hover {
+		background-color: rgba(255, 255, 255, 0.06) !important;
+	}
+	// 深色下 Function2 表面卡的兜底(与令牌双保险)
+	&.md-dark [class*="containerCls"] {
+		background: var(--colorBackgroundWhite) !important;
+	}
+}
