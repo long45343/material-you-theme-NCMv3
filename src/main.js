@@ -207,8 +207,7 @@ const refreshTheme = () => {
 	updateAccentColor(colors.secondary, 'secondary');
 	updateAccentColor(colors.bg, 'bg');
 	updateAccentColor(colors.bgDarken, 'bg-darken');
-	// 广播:面板预览等监听者按当前主色重算(修切歌后换方案配色滞留)
-	document.body.dispatchEvent(new CustomEvent('md-dominant-color-change'));
+
 
 	applyNativeAppearance(colors.primary);
 };
@@ -446,7 +445,7 @@ const injectSettingsEntry = () => {
 				anchor.insertBefore(container, divider && divider.parentElement === anchor ? divider : null);
 			}
 		};
-		new MutationObserver(() => { reattach(); relocateBncmEntry(); }).observe(nav, { childList: true, subtree: true });
+		new MutationObserver(reattach).observe(nav, { childList: true, subtree: true });
 		reattach();
 
 			// 隐藏网易云皮肤切换入口(主题启用时与主题冲突;连同未读红点)
@@ -456,14 +455,7 @@ const injectSettingsEntry = () => {
 			const btn = icon.closest('[class*="BadgeWrapper"]') ?? icon.closest('.cmd-badge') ?? icon.closest('button') ?? icon;
 			btn.style.display = 'none';
 		};
-		// BNCM(chromatic)管理器入口归位:移入图标行,排在我们按钮之后
-		const relocateBncmEntry = () => {
-			const b = document.querySelector('[title="BetterNCM"]');
-			if (!b) return;
-			if (b.parentElement !== nav || container.nextElementSibling !== b) {
-				nav.insertBefore(b, container.nextElementSibling);
-			}
-		};
+		// BNCM 入口归位已回退:搬移 chromatic 节点与其 React 协调冲突,疑似首启崩溃源
 		hideSkinEntry();
 		relocateBncmEntry();
 		new MutationObserver(hideSkinEntry).observe(nav, { childList: true, subtree: true });
@@ -500,7 +492,7 @@ const updateGreeting = () => {
 
 // ---------------------------------------------------------------- 启动
 const boot = () => {
-	initSettings();
+	try { initSettings(); } catch (e) { console.error('MD3 initSettings', e); }
 	updateGreeting();
 	setInterval(updateGreeting, 30000);
 
