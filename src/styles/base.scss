@@ -16,3 +16,9 @@ body.material-you-theme ::-webkit-scrollbar-thumb {
 body.material-you-theme .cmd-button {
 	transition: background-color 0.25s ease, color 0.25s ease;
 }
+
+// E3b(用户追加):body 背景单独保留渐变 —— 单一大表面的纯色填充每帧代价低,
+// 卡片/面板等其余大面维持瞬变(E3 主修),换歌/切方案时背景平滑过渡。
+body.material-you-theme {
+	transition: background-color 0.25s ease;
+}

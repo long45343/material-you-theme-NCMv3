@@ -208,15 +208,19 @@ const getActiveColors = () => {
 };
 
 const refreshTheme = () => {
+	const __t0 = performance.now();
 	updateDynamicTheme();
+	const __t1 = performance.now();
 	const mode = window.mdThemeType === 'dark' ? 'dark' : 'light';
 	let colors = getActiveColors();
+	const __t2 = performance.now();
 	if (!colors.primary) {
 		// 引擎还没有取到色(无封面):用默认动态色兜底
 		const fallback = (n) => defaultDynamicColor[`--md-dynamic-${mode}-${n}`].match(/\d+/g).slice(0, 3).map(Number);
 		colors = { primary: fallback('primary'), secondary: fallback('secondary'), bg: fallback('bg'), bgDarken: fallback('bg-darken') };
 	}
 	tokenStyleController.innerHTML = buildTokenCSS(colors, mode);
+	const __t3 = performance.now();
 
 	// 强调色变量(设置面板与插件样式消费)
 	updateAccentColor(colors.primary, 'primary');
@@ -226,6 +230,11 @@ const refreshTheme = () => {
 
 
 	applyNativeAppearance(colors.primary);
+
+	// E1 二期:阶段耗时打点(内存累积,recon meta.json 转储;上线后可移除)
+	const __w = (window.__mdStageStats ??= []);
+	__w.push(`dyn=${(__t1-__t0).toFixed(1)} engine=${(__t2-__t1).toFixed(1)} token=${(__t3-__t2).toFixed(1)} accent=${(performance.now()-__t3).toFixed(1)}`);
+	if (__w.length > 24) __w.shift();
 };
 
 // ---------------------------------------------------------------- 原生外观联动(D3=实验开关)

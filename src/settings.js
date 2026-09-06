@@ -22,6 +22,8 @@ class MDSettings extends React.Component {
 			})))
 		};
 		this.setScheme = this.setScheme.bind(this);
+		// E4-B:自定义主题项的回调原本是 render 内联箭头(每次渲染新引用,击穿 memo)——提为绑定方法
+		this.setCustomScheme = this.setCustomScheme.bind(this);
 	}
 	componentDidMount() {
 		this.setState({
@@ -34,9 +36,18 @@ class MDSettings extends React.Component {
 		});
 	}
 	setScheme(scheme) {
+		const __t0 = performance.now();
 		this.setState({ scheme: scheme.name });
 		applyScheme(scheme.name);
 		setSetting('scheme', scheme.name);
+		// E1 二期:点击侧总耗时(含同步 React 渲染 + applyScheme 全程),recon meta.json 转储
+		const __w = (window.__mdStageStats ??= []);
+		__w.push(`CLICK total=${(performance.now()-__t0).toFixed(1)} (${scheme.name})`);
+		if (__w.length > 24) __w.shift();
+	}
+	setCustomScheme(scheme) {
+		setSetting('custom-scheme', JSON.stringify(this.state.customPreset));
+		this.setScheme(scheme);
 	}
 	render() {
 		return (
@@ -73,12 +84,7 @@ class MDSettings extends React.Component {
 					</div>
 					<div className="md-scheme-list">
 						<div className="md-scheme-list-section-title">自定义主题</div>
-						<SchemeItem key="custom" scheme={ {name: 'custom', palette: this.state.customPreset} } active={ this.state.scheme === 'custom' } setScheme={ 
-							(scheme) => {
-								setSetting('custom-scheme', JSON.stringify(this.state.customPreset));
-								this.setScheme(scheme);
-							}
-						} />
+					<SchemeItem key="custom" scheme={ {name: 'custom', palette: this.state.customPreset} } active={ this.state.scheme === 'custom' } setScheme={ this.setCustomScheme } />
 					</div>
 					{
 						this.state.scheme === 'custom' ? (
@@ -152,7 +158,9 @@ class MDSettings extends React.Component {
 	}
 }
 
-function DynamicSchemeSet(props) {
+// E4-B:仅当本族方案的激活态进出、或回调/取色缓存变化时才重渲染;
+// 其它族的 activeScheme 字符串变化(点了别的族)不触发本族重渲染。
+const DynamicSchemeSet = React.memo(function DynamicSchemeSet(props) {
 	const [cssVariables, setCssVariables] = React.useState({});
 
 	React.useEffect(() => {
@@ -171,40 +179,55 @@ function DynamicSchemeSet(props) {
 		};
 	}, []);
 
+	// 稳定引用:三件套 scheme 对象与 auto 回调(原先是 render 内联字面量/箭头,击穿子级 memo)
+	const darkItem = React.useMemo(() => ({ name: `dynamic-${props.name}-dark`, palette: {} }), [props.name]);
+	const lightItem = React.useMemo(() => ({ name: `dynamic-${props.name}-light`, palette: {} }), [props.name]);
+	const autoItem = React.useMemo(() => ({ name: `dynamic-${props.name}-auto`, palette: {} }), [props.name]);
+	const setAutoScheme = React.useCallback((scheme) => {
+		props.setScheme(scheme);
+		document.body.dispatchEvent(new CustomEvent('md-dynamic-theme-auto'));
+	}, [props.setScheme]);
+
 	return (
 		<React.Fragment>
 			<SchemeItem
 				key={`dynamic-${props.name}-dark`}
 				dynamic={true}
-				scheme={ {name: `dynamic-${props.name}-dark`, palette: {}}}
-				active={ props.activeScheme === `dynamic-${props.name}-dark` }
+				scheme={darkItem}
+				active={ props.activeScheme === darkItem.name }
 				setScheme={ props.setScheme }
 				cssVariablesOverride={cssVariables}
 			/>
 			<SchemeItem
 				key={`dynamic-${props.name}-light`}
 				dynamic={true}
-				scheme={ {name: `dynamic-${props.name}-light`, palette: {}}}
-				active={ props.activeScheme === `dynamic-${props.name}-light` }
+				scheme={lightItem}
+				active={ props.activeScheme === lightItem.name }
 				setScheme={ props.setScheme }
 				cssVariablesOverride={cssVariables}
 			/>
 			<SchemeItem
 				key={`dynamic-${props.name}-auto`}
 				dynamic={true}
-				scheme={ {name: `dynamic-${props.name}-auto`, palette: {}}}
-				active={ props.activeScheme === `dynamic-${props.name}-auto` }
-				setScheme={ (scheme) => {
-					props.setScheme(scheme);
-					document.body.dispatchEvent(new CustomEvent('md-dynamic-theme-auto'));
-				}}
+				scheme={autoItem}
+				active={ props.activeScheme === autoItem.name }
+				setScheme={ setAutoScheme }
 				cssVariablesOverride={cssVariables}
 			/>
 		</React.Fragment>
 	);
-}
+}, (prev, next) => {
+	// 返回 true = 跳过重渲染。本族激活态 = activeScheme 以 dynamic-<本族名>- 开头
+	const familyPrefix = `dynamic-${next.name}-`;
+	const familyChanged = prev.activeScheme.startsWith(familyPrefix) !== next.activeScheme.startsWith(familyPrefix);
+	if (familyChanged) return false;
+	if (prev.activeScheme !== next.activeScheme && next.activeScheme.startsWith(familyPrefix)) return false;
+	return prev.name === next.name && prev.setScheme === next.setScheme;
+});
 
-function SchemeItem(props) {
+// E4-B:自定义比较器 —— scheme 用"名字+调色板引用"深一度比较(容忍父级每次新建包装对象),
+// 其余 props 浅比较。点击方案时仅新旧两个激活项重渲染,其余 ~16 项全部跳过。
+const SchemeItem = React.memo(function SchemeItem(props) {
 	const containerRef = React.useRef(null);
 
 	React.useEffect(() => {
@@ -232,7 +255,13 @@ function SchemeItem(props) {
 			</div>
 		</div>
 	);
-}
+}, (prev, next) => {
+	if (prev.active !== next.active) return false;
+	if (prev.dynamic !== next.dynamic) return false;
+	if (prev.setScheme !== next.setScheme) return false;
+	if (prev.cssVariablesOverride !== next.cssVariablesOverride) return false;
+	return prev.scheme.name === next.scheme.name && prev.scheme.palette === next.scheme.palette;
+});
 
 class SchemePreview extends React.Component {
 	constructor(props) {

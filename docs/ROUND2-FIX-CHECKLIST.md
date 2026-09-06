@@ -183,6 +183,10 @@
 | 探针波(v2.4) | ✅ 2026-09-07 03:16 部署,按钮 FOUND 1.0s,主题正常 | boot/verify/perf 全部即时产出 | v2.4 关闭热路径写盘事故 |
 | **E1 baseline** | ✅ **典型一次方案切换 = longtask 60-75ms + 4-12 个 >25ms 帧间隙(最大 58-103ms)**;重切换 107-113ms;连点同方案时出现无变更轻切 | md33recon-perf.txt(19:19:08-31,21 次点击) | 60fps 下每次切换冻结 4-6 帧 = 用户体感卡顿;另:一次点击可产生 2-3 次令牌提交(auto 方案的双提交路径) |
 | D-rev 布局数据 | ✅ ⚙ 父容器 BadgeWrapper **固定宽 40px**(display:block),BNCM 克隆(28×28)同容器装不下被挤到下一行(y=49 vs y=26) | md33recon-bncmlayout.txt | CSS 修法:含 `[title="BetterNCM"]` 的 wrapper 放开宽度 |
-| 修复波部署 | ✅ 2026-09-07 03:24-03:31(迭代 3 次) | verify:按钮 FOUND 1.0s;主题正常 | E2+E3 首次部署即生效:**启动期帧间隙 114ms → 32ms** |
+| 修复波部署 | ✅ 2026-09-07 03:24-03:31(迭代 3 次) | verify:按钮 FOUND 1.0s;主题正常 | E2+E3 首次部署即生效:启动期帧间隙 114ms → 32ms |
+| E1 二期打点 | ✅ 插件 JS 全程 **0.3~0.5ms**(React/引擎/令牌/accent);58~65ms longtask = Chromium 全文档重算+重绘(固有);**切歌实际 151ms+157ms 帧隙,被封面动画感知掩盖** | meta.json stageStats + perf.txt | 用户澄清:卡顿指动画掉帧,颜色晚变可接受 |
+| E3b body 渐变 | ✅ 已恢复部署,实测帧数据与无渐变轮相同(无恶化) | 03:40/03:49 两轮 perf | 用户要求 |
+| E4-B 面板 memo | ✅ 已部署生效(useCallback×1/useMemo×3 在 dist),longtask 纹丝不动 → **证实面板渲染非主体** | dist grep + 19:53 轮 perf | 保留(点击正确性+未来收益) |
+| E1 三期 content-visibility | ✅ 视口外卡片跳过重算/绘制:longtask 多数消失,掉帧 2~4→1~2 个,max 72-78→54-61ms;多次切换零掉帧 | 20:09 轮 perf.txt | 待用户确认滚动无副作用 |
 | D-rev 归位 | ✅ 03:30 版本生效:BNCM 克隆 x=1189,y=26(与 ⚙ 同行;此前 y=49 第二行) | bncmbtn.txt + 放大截图(✉ ⚙ [BNCM] [我们] 同行等距) | 迭代:①`:has()` 失效——CEF 91 不支持,整条规则被丢;②克隆缩 20px 仍换行——容器宽随徽章 20↔40 波动;③终版 = wrapper 提 relative + 克隆绝对定位锚右外 22px |
 | D-rev 顺序说明 | 克隆落在 ⚙ 与我们按钮之间(✉ ⚙ [BNCM] [我们]),非 E4 理想序 [我们][BNCM] | 截图 | 纯 CSS 无法重排 React 兄弟节点;同行目标已达成,顺序调整须用户拍板 |

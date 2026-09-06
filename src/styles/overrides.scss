@@ -5,6 +5,17 @@ body.material-you-theme .cmd-button {
 	border-radius: 100px !important;
 }
 
+// E1 三期(用户选项1):视口外卡片跳过样式重算与绘制(content-visibility)。
+// 全局换肤的大渲染帧 + body 渐变期的逐帧重绘都只发生在可见区 → 动画掉帧收敛。
+// contain-intrinsic-size 带 auto 前缀:Chromium 记住元素上次真实尺寸,滚动跳动最小化。
+body.material-you-theme [class*="CardWrapper"],
+body.material-you-theme [class*="WrapperCard"],
+body.material-you-theme [class*="StyledRankCard"],
+body.material-you-theme [class*="containerCls"] {
+	content-visibility: auto;
+	contain-intrinsic-size: auto 170px auto 200px;
+}
+
 // 卡片家族:圆角 + 阴影层次 + 悬浮抬升
 // E3:卡片不做颜色过渡(大表面过渡是切方案帧冻结的主因),阴影/圆角静态保留
 body.material-you-theme {
