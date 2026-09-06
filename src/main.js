@@ -428,16 +428,23 @@ const injectSettingsEntry = () => {
 		container.addEventListener('dblclick', (e) => e.stopPropagation());
 		container.addEventListener('mousedown', (e) => e.stopPropagation());
 
-		const getAnchor = () => nav.querySelector('[class*="MiniModeIconBar_"]')
-			?? nav.querySelector('img.cmd-image')?.closest('[class*="Bar_"]')
-			?? nav;
+		// 锚点:消息徽章(✉)旁——保证与原生图标同一行同一容器
+		const getAnchor = () => {
+			const msg = nav.querySelector('.cmd-icon-message')?.closest('[class*="BadgeWrapper"]') ?? nav.querySelector('.cmd-icon-message');
+			return (msg?.parentElement === nav.parentElement ? nav : msg?.parentElement) ?? nav;
+		};
+		const getInsertBefore = () => {
+			const msg = nav.querySelector('.cmd-icon-message')?.closest('[class*="BadgeWrapper"]');
+			return msg ? msg.nextSibling : null;
+		};
 
 		// React 重渲染会抹掉它不认识的子节点;且图标行可能晚于注入时机挂载:
 		// 每次 DOM 变化都把容器纠正到正确的锚点(已到位则无操作)
 		const reattach = () => {
 			const anchor = getAnchor();
 			if (container.parentElement !== anchor) {
-				anchor.appendChild(container);
+				const ref = getInsertBefore();
+				anchor.insertBefore(container, ref && ref.parentElement === anchor ? ref : null);
 			}
 		};
 		new MutationObserver(reattach).observe(nav, { childList: true, subtree: true });

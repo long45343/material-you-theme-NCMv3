@@ -1,21 +1,28 @@
 // nav.scss — 顶栏(#page_pc_main_nav,含搜索/头像/功能图标/窗口控制)
-// 注意:3.1 的 "nav" 是顶栏而非左侧栏(左侧栏为 LeftScrollContainer)。
-// 侧栏配色已由 --colorSidebar* 令牌全局生效。
+// 3.1 的 "nav" 是顶栏;左侧栏为 LeftScrollContainer。配色由 --colorSidebar* 令牌生效。
 
-// 设置入口按钮:与顶栏原生图标同尺寸(24px),防止换行被裁
+// 设置入口:与原生 cmd-badge 图标同尺寸同基线(inline-block)
 #page_pc_main_nav .md-settings-menu-container {
-	flex-shrink: 0;
-	display: flex;
+	display: inline-flex !important;
 	align-items: center;
 	justify-content: center;
-	width: 24px !important;
-	height: 24px !important;
-	margin: 0 4px;
+	flex-shrink: 0;
+	width: 26px !important;
+	height: 26px !important;
+	margin: 0 6px;
 	overflow: visible;
+	vertical-align: middle;
+	position: relative;
+	z-index: 9999; // 压过头像挂件,保证可点
+}
+// 常驻可见底色(不依赖 mask 渲染)
+#page_pc_main_nav #md-theme-setting-btn > div {
+	background-color: rgba(var(--md-accent-color-secondary-rgb), 0.75) !important;
+	-webkit-mask-size: 78% !important;
 }
 #page_pc_main_nav #md-theme-setting-btn {
-	width: 24px !important;
-	height: 24px !important;
+	width: 26px !important;
+	height: 26px !important;
 	> div {
 		width: 18px !important;
 		height: 18px !important;
