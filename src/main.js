@@ -443,7 +443,17 @@ const injectSettingsEntry = () => {
 		new MutationObserver(reattach).observe(nav, { childList: true, subtree: true });
 		reattach();
 
-		// React/ReactDOM 由客户端 vendor 挂载,需等待就绪
+			// 隐藏网易云皮肤切换入口(主题启用时与主题冲突;连同未读红点)
+		const hideSkinEntry = () => {
+			const icon = nav.querySelector('.cmd-icon-skin');
+			if (!icon) return;
+			const btn = icon.closest('[class*="BadgeWrapper"]') ?? icon.closest('.cmd-badge') ?? icon.closest('button') ?? icon;
+			btn.style.display = 'none';
+		};
+		hideSkinEntry();
+		new MutationObserver(hideSkinEntry).observe(nav, { childList: true, subtree: true });
+
+	// React/ReactDOM 由客户端 vendor 挂载,需等待就绪
 		const waitReactDOM = setInterval(() => {
 			if (window.ReactDOM && window.React) {
 				clearInterval(waitReactDOM);

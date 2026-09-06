@@ -1,2 +1,15 @@
 // songplay.scss — 播放页(#page_pc_songplay / vinyl)
-// v1:保留网易云自带的封面模糊背景,仅由令牌统一文字/强调色。
+// MD3 重塑:保留网易云封面模糊背景,叠一层主题色渐变纱,标题/歌词由令牌统一。
+
+body.material-you-theme #VINYL_COVER_ELEMENT_ID::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	background: linear-gradient(
+		180deg,
+		rgba(var(--md-accent-color-rgb), 0.14) 0%,
+		rgba(var(--md-accent-color-bg-rgb), 0.42) 78%,
+		rgba(var(--md-accent-color-bg-rgb), 0.66) 100%
+	);
+}

@@ -1,7 +1,45 @@
-// overrides.scss — cmd-* 组件与结构的少量修正
-// 大面积配色已由令牌完成;这里只处理令牌覆盖不到的细节。
+// overrides.scss — cmd-* 组件与结构的 MD3 修饰
 
-// 隐藏网易云 Logo(D2 首保留的界面项;锚点:侧栏顶部 logo 图标类)
+// 按钮 pill 化(MD3 全圆角)
+body.material-you-theme .cmd-button {
+	border-radius: 100px !important;
+}
+
+// 卡片家族:圆角 + 阴影层次 + 悬浮抬升
+body.material-you-theme {
+	[class*="StyledRankCard"],
+	[class*="CardWrapper"],
+	[class*="WrapperCard"],
+	[class*="containerCls"] {
+		border-radius: 12px !important;
+		overflow: hidden;
+		transition: background-color 0.2s ease, box-shadow 0.2s ease;
+	}
+	&.md-light [class*="StyledRankCard"],
+	&.md-light [class*="CardWrapper"],
+	&.md-light [class*="WrapperCard"],
+	&.md-light [class*="containerCls"] {
+		box-shadow: var(--md-elev-1);
+	}
+	&.md-light [class*="CardWrapper"]:hover,
+	&.md-light [class*="WrapperCard"]:hover {
+		background-color: rgba(var(--md-accent-color-secondary-rgb), 0.06) !important;
+		box-shadow: var(--md-elev-2);
+	}
+	&.md-dark [class*="CardWrapper"]:hover,
+	&.md-dark [class*="WrapperCard"]:hover {
+		background-color: rgba(255, 255, 255, 0.06) !important;
+	}
+	// 深色:Function2/运行时硬编码白的卡片兜底
+	&.md-dark [class*="containerCls"],
+	&.md-dark [class*="StyledRankCard"],
+	&.md-dark [class*="CardWrapper"],
+	&.md-dark [class*="WrapperCard"] {
+		background: var(--colorBackgroundWhite) !important;
+	}
+}
+
+// 隐藏网易云 Logo(界面项)
 body.material-you-theme.hide-ncm-logo {
 	#page_pc_main_nav .cmd-icon-logo,
 	#page_pc_main_tab .cmd-icon-logo {
@@ -9,7 +47,7 @@ body.material-you-theme.hide-ncm-logo {
 	}
 }
 
-// 自绘 toast(替代 2.x u-result 体系)
+// 自绘 toast
 .md-toast {
 	position: fixed;
 	left: 50%;
@@ -24,47 +62,7 @@ body.material-you-theme.hide-ncm-logo {
 	font-size: 13px;
 }
 
-// 播放条红心数徽标跟随主题色(原生为固定红)
-body.material-you-theme [class*="red-star"] svg,
-body.material-you-theme [class*="red-star"] svg path {
-	fill: var(--colorPrimary1) !important;
-}
-body.material-you-theme [class*="red-star"] [style*="color"],
-body.material-you-theme [class*="red-star"] .cmd-typography {
-	color: var(--colorPrimary1) !important;
-}
-
-// 深色下:榜单精选卡/各类卡片背景被 styled-components 运行时注入硬编码白,
-// 令牌层覆盖不到,这里按结构类名兜底为主题表面色(白字在深面上自然可读)
-body.material-you-theme.md-dark {
-	[class*="StyledRankCard"],
-	[class*="CardWrapper"],
-	[class*="WrapperCard"] {
-		background: var(--colorBackgroundWhite) !important;
-	}
-}
-
-// MD3 卡片层:统一圆角与悬浮过渡(榜单卡/歌单卡/推荐行卡)
-body.material-you-theme {
-	[class*="StyledRankCard"],
-	[class*="CardWrapper"],
-	[class*="WrapperCard"],
-	[class*="containerCls"] {
-		border-radius: 10px !important;
-		overflow: hidden;
-		transition: background-color 0.2s ease, box-shadow 0.2s ease;
-	}
-	// 悬浮:MD3 表面抬升(浅色微灰/深色微亮),不再跳白
-	&.md-light [class*="CardWrapper"]:hover,
-	&.md-light [class*="WrapperCard"]:hover {
-		background-color: rgba(var(--md-accent-color-secondary-rgb), 0.06) !important;
-	}
-	&.md-dark [class*="CardWrapper"]:hover,
-	&.md-dark [class*="WrapperCard"]:hover {
-		background-color: rgba(255, 255, 255, 0.06) !important;
-	}
-	// 深色下 Function2 表面卡的兜底(与令牌双保险)
-	&.md-dark [class*="containerCls"] {
-		background: var(--colorBackgroundWhite) !important;
-	}
+// 主题启用时隐藏网易云皮肤切换入口(图标本体;外层按钮由 JS 隐藏)
+body.material-you-theme #page_pc_main_nav .cmd-icon-skin {
+	display: none !important;
 }

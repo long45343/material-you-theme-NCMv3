@@ -1,12 +1,15 @@
-// variables.scss — MD 主题变量契约与默认值
-// 大部分换肤由 theme-tokens.js 生成的 --color* 令牌覆盖完成,
-// 这里只维护插件自身的 --md-* 变量与亮暗映射。
+// variables.scss — MD 主题变量契约: elevation/表面梯度/亮暗映射
+// 换肤主力在 theme-tokens.js;这里维护 MD3 结构性变量。
 
 body.material-you-theme {
-	// 2.x 兼容:设置面板高度计算仍引用
-	--bottombar-height: 90px;
+	--bottombar-height: 90px; // 设置面板高度计算兼容
 
-	// 亮暗模式 → 页面色(供插件自身样式统一消费,避免处处写亮暗分支)
+	// MD3 elevation 阴影(浅色下可见,深色下弱化)
+	--md-elev-1: 0 1px 2px rgba(0, 0, 0, 0.16), 0 1px 3px 1px rgba(0, 0, 0, 0.08);
+	--md-elev-2: 0 1px 2px rgba(0, 0, 0, 0.18), 0 2px 6px 2px rgba(0, 0, 0, 0.10);
+	--md-elev-3: 0 2px 8px 2px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.20);
+
+	// 页面语义色(按亮暗映射到动态令牌)
 	--md-page-bg: var(--md-dynamic-light-bg);
 	--md-page-bg-darken: var(--md-dynamic-light-bg-darken);
 	--md-page-primary: var(--md-dynamic-light-primary);
@@ -18,9 +21,7 @@ body.material-you-theme.md-dark {
 	--md-page-bg-darken: var(--md-dynamic-dark-bg-darken);
 	--md-page-primary: var(--md-dynamic-dark-primary);
 	--md-page-fg: var(--md-accent-color-secondary);
-}
-
-// 设置面板保持可读:面板自身配色跟随插件方案(与客户端令牌解耦)
-#md-theme-setting {
-	--md-accent-color: var(--md-accent-color, rgb(103, 80, 164));
+	--md-elev-1: 0 1px 2px rgba(0, 0, 0, 0.40);
+	--md-elev-2: 0 2px 6px rgba(0, 0, 0, 0.45);
+	--md-elev-3: 0 4px 10px rgba(0, 0, 0, 0.50);
 }

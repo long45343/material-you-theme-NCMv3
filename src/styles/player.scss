@@ -1,2 +1,13 @@
-// player.scss — 播放条(footer / DefaultPlayerContainer)
-// 配色由令牌全局生效;v1 无额外规则。
+// player.scss — 播放条(footer > #page_pc_mini_bar)
+// MD3:表面色 + 顶部圆角 + 上投影,与页面背景分层。
+
+body.material-you-theme footer {
+	background: var(--colorBackgroundWhite) !important;
+	border-radius: 16px 16px 0 0;
+	box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.10);
+}
+
+// 进度条 hover 时间气泡跟随主题
+body.material-you-theme .curtime-thumb .cmd-button {
+	background: var(--colorPrimary1) !important;
+}
