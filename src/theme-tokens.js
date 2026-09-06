@@ -46,9 +46,10 @@ export const buildTokenCSS = (scheme, mode) => {
 		out.push(`--colorPrimary${i + 1}: ${rgba(primary, a)} !important;`);
 	});
 
-	// ---- Secondary1_x:主按钮渐变两端(主色与其微变体) ----
-	out.push(`--colorSecondary1_1: ${rgba(secondary, 1)} !important;`);
-	out.push(`--colorSecondary1_2: ${rgba(mix(secondary, primary, 0.35), 1)} !important;`);
+	// ---- Secondary1_x:主按钮渐变两端。NCM 原生用 linear-gradient(1_2→1_1),
+	// 但原版两色几乎同色(纯色观感);这里两端统一为主色,保持纯色质感 ----
+	out.push(`--colorSecondary1_1: ${rgba(primary, 1)} !important;`);
+	out.push(`--colorSecondary1_2: ${rgba(primary, 1)} !important;`);
 
 	// ---- Secondary2_x:分类色板。2_1 跟随主色,2_2..4 保留网易云原值 ----
 	out.push(`--colorSecondary2_1: ${rgba(primary, 1)} !important;`);
@@ -81,10 +82,10 @@ export const buildTokenCSS = (scheme, mode) => {
 		out.push(`--colorSidebar${i + 1}: ${rgba(sidebarFgBase, a)} !important;`);
 	});
 	out.push(`--colorSidebar8: ${rgba(dark ? mix(bg, [255, 255, 255], 0.08) : white, 1)} !important;`);
-	out.push(`--colorSidebar9:  ${rgba(secondary, 1)} !important;`);
-	out.push(`--colorSidebar10: ${rgba(mix(secondary, primary, 0.35), 1)} !important;`);
-	out.push(`--colorSidebar11: ${rgba(secondary, 1)} !important;`);
-	out.push(`--colorSidebar12: ${rgba(mix(secondary, primary, 0.35), 1)} !important;`);
+	out.push(`--colorSidebar9:  ${rgba(primary, 1)} !important;`);
+	out.push(`--colorSidebar10: ${rgba(primary, 1)} !important;`);
+	out.push(`--colorSidebar11: ${rgba(primary, 1)} !important;`);
+	out.push(`--colorSidebar12: ${rgba(primary, 1)} !important;`);
 	out.push(`--colorSidebar13: ${rgba(white, 1)} !important;`);
 
 	// ---- 背景 ----
