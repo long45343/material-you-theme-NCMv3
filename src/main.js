@@ -432,10 +432,12 @@ const injectSettingsEntry = () => {
 			?? nav.querySelector('img.cmd-image')?.closest('[class*="Bar_"]')
 			?? nav;
 
-		// React 重渲染会抹掉它不认识的子节点:被删则自动重挂
+		// React 重渲染会抹掉它不认识的子节点;且图标行可能晚于注入时机挂载:
+		// 每次 DOM 变化都把容器纠正到正确的锚点(已到位则无操作)
 		const reattach = () => {
-			if (!container.isConnected) {
-				getAnchor().appendChild(container);
+			const anchor = getAnchor();
+			if (container.parentElement !== anchor) {
+				anchor.appendChild(container);
 			}
 		};
 		new MutationObserver(reattach).observe(nav, { childList: true, subtree: true });
