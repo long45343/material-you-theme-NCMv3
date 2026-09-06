@@ -425,48 +425,55 @@ const probeAndWatchAppThemeMode = () => {
 // ---------------------------------------------------------------- 设置入口(D7:侧栏头像旁)
 const injectSettingsEntry = () => {
 	waitForElement('#page_pc_main_nav', (nav) => {
+		// 关键路径(A1):容器创建与按钮初始化调度必须最先执行;
+		// 装饰性逻辑(重挂守卫/皮肤隐藏)失败只允许影响外观,不得阻断按钮出现。
 		const container = document.createElement('div');
 		container.id = 'md-settings-menu-container';
 		container.className = 'md-settings-menu-container';
 		container.addEventListener('dblclick', (e) => e.stopPropagation());
 		container.addEventListener('mousedown', (e) => e.stopPropagation());
 
-		// 锚点:原生徽章行末尾(E4:✉ ⚙ [我们] [BNCM])
-		const getAnchor = () => nav.querySelector('[class*="MiniModeIconBar_"]')?.parentElement
-			?? nav.querySelector('img.cmd-image')?.closest('[class*="Bar_"]')?.parentElement
-			?? nav; // IconBar 本体:分隔线之前,徽章数量变化不影响
-
-		// React 重渲染会抹掉它不认识的子节点;且图标行可能晚于注入时机挂载:
-		// 每次 DOM 变化都把容器纠正到正确的锚点(已到位则无操作)
-		const reattach = () => {
-			const anchor = getAnchor();
-			const divider = anchor.querySelector('[class*="Divider_"]');
-			if (container.parentElement !== anchor || (divider && container.nextElementSibling !== divider && divider.parentElement === anchor)) {
-				anchor.insertBefore(container, divider && divider.parentElement === anchor ? divider : null);
-			}
-		};
-		new MutationObserver(reattach).observe(nav, { childList: true, subtree: true });
-		reattach();
-
-			// 隐藏网易云皮肤切换入口(主题启用时与主题冲突;连同未读红点)
-		const hideSkinEntry = () => {
-			const icon = nav.querySelector('.cmd-icon-skin');
-			if (!icon) return;
-			const btn = icon.closest('[class*="BadgeWrapper"]') ?? icon.closest('.cmd-badge') ?? icon.closest('button') ?? icon;
-			btn.style.display = 'none';
-		};
-		// BNCM 入口归位已回退:搬移 chromatic 节点与其 React 协调冲突,疑似首启崩溃源
-		hideSkinEntry();
-		relocateBncmEntry();
-		new MutationObserver(hideSkinEntry).observe(nav, { childList: true, subtree: true });
-
-	// React/ReactDOM 由客户端 vendor 挂载,需等待就绪
+		// React/ReactDOM 由客户端 vendor 挂载,需等待就绪(initSettingMenu 内部有容器缺失重试,可容忍时序差)
 		const waitReactDOM = setInterval(() => {
 			if (window.ReactDOM && window.React) {
 				clearInterval(waitReactDOM);
 				initSettingMenu();
 			}
 		}, 200);
+
+		try {
+			// 锚点:原生徽章行末尾(E4:✉ ⚙ [我们]);IconBar 本体在分隔线之前,徽章数量变化不影响
+			const getAnchor = () => nav.querySelector('[class*="MiniModeIconBar_"]')?.parentElement
+				?? nav.querySelector('img.cmd-image')?.closest('[class*="Bar_"]')?.parentElement
+				?? nav;
+
+			// React 重渲染会抹掉它不认识的子节点;且图标行可能晚于注入时机挂载:
+			// 每次 DOM 变化都把容器纠正到正确的锚点(已到位则无操作)
+			const reattach = () => {
+				const anchor = getAnchor();
+				const divider = anchor.querySelector('[class*="Divider_"]');
+				if (container.parentElement !== anchor || (divider && container.nextElementSibling !== divider && divider.parentElement === anchor)) {
+					anchor.insertBefore(container, divider && divider.parentElement === anchor ? divider : null);
+				}
+			};
+			reattach();
+			new MutationObserver(reattach).observe(nav, { childList: true, subtree: true });
+
+			// 隐藏网易云皮肤切换入口(主题启用时与主题冲突;连同未读红点)
+			const hideSkinEntry = () => {
+				const icon = nav.querySelector('.cmd-icon-skin');
+				if (!icon) return;
+				const btn = icon.closest('[class*="BadgeWrapper"]') ?? icon.closest('.cmd-badge') ?? icon.closest('button') ?? icon;
+				btn.style.display = 'none';
+			};
+			hideSkinEntry();
+			new MutationObserver(hideSkinEntry).observe(nav, { childList: true, subtree: true });
+		} catch (e) {
+			console.error('MD3 nav decorations', e);
+		}
+
+		// BNCM 入口归位在第二轮以纯 CSS 实现(docs/FIX-CHECKLIST.md 工作项 D):
+		// 严禁 JS 搬移/插入 React 管理的节点(96b51cc 前车之鉴:协调冲突 → 首启崩溃)
 	});
 };
 

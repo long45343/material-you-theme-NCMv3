@@ -27,9 +27,9 @@ BetterNCM/chromatic 主题插件 `MaterialYouThemeNCMv3`,为网易云 **3.1.39**
 
 ## 下一步工作清单(按序,均未开始)
 
-1. **回归验证**:杀进程 → 冷启动 ×2,确认无崩溃、scheme 保留(localStorage 键 `material-you-theme-scheme`);
+1. ~~**回归验证**~~ ✅ 已完成(2026-09-07,见 docs/FIX-CHECKLIST.md 验证记录):根因是 96b51cc 回滚漏删了 `relocateBncmEntry()` 调用(ReferenceError 每次启动杀死 initSettingMenu);已清创+关键路径前置,5 次启动无一崩溃、scheme 保留。剩用户截图兜底 → 之后进入第二轮 D1-A(BNCM 归位,决策见 FIX-CHECKLIST.md);
 2. **R1 行高亮横跨整行**(E1 保留原样/E2 纯 CSS 上移):发现步 = recon elementFromPoint 命中歌单页曲目行标题列(x≈500)与时长列(x≈1400)各走祖先找公共行元素;然后 CSS 把 hover 背景/圆角从内层上移到行元素;
-3. **BNCM 入口归位改走 E3-B 纯 CSS**(禁用 JS 搬移!React 节点):先探针拿音符按钮 rect(上次 miss,需先弹窗让用户把窗口摆好或改用遍历搜 `title="BetterNCM"`——它有这个 title),然后 `position:fixed` 对齐图标行高度;
+3. **BNCM 入口归位改走 E3-B 纯 CSS**(禁用 JS 搬移!React 节点):已决策 D1-A = 只读探针(getBoundingClientRect)+ CSS 变量 + position:fixed;recon v2.2 的 bncmbtn.txt 已支持 `title="BetterNCM"` 探针备料;
 4. **R4-b 歌词 MD3 强对比**(E8):`.TrackDisplayContainer` 区域,当前行主色+1.15x+加粗;
 5. **R5 验证**:用户复现"普通主题→动态主题"路径,确认配色正常(根因 `mdActivePreset` 残留已修,commit 0678567)。
 
