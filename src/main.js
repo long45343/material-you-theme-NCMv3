@@ -207,6 +207,8 @@ const refreshTheme = () => {
 	updateAccentColor(colors.secondary, 'secondary');
 	updateAccentColor(colors.bg, 'bg');
 	updateAccentColor(colors.bgDarken, 'bg-darken');
+	// 广播:面板预览等监听者按当前主色重算(修切歌后换方案配色滞留)
+	document.body.dispatchEvent(new CustomEvent('md-dominant-color-change'));
 
 	applyNativeAppearance(colors.primary);
 };
@@ -431,16 +433,17 @@ const injectSettingsEntry = () => {
 		container.addEventListener('mousedown', (e) => e.stopPropagation());
 
 		// 锚点:原生徽章行末尾(E4:✉ ⚙ [我们] [BNCM])
-		const getAnchor = () => nav.querySelector('[class*="MiniModeIconBar_"]')
-			?? nav.querySelector('img.cmd-image')?.closest('[class*="Bar_"]')
-			?? nav;
+		const getAnchor = () => nav.querySelector('[class*="MiniModeIconBar_"]')?.parentElement
+			?? nav.querySelector('img.cmd-image')?.closest('[class*="Bar_"]')?.parentElement
+			?? nav; // IconBar 本体:分隔线之前,徽章数量变化不影响
 
 		// React 重渲染会抹掉它不认识的子节点;且图标行可能晚于注入时机挂载:
 		// 每次 DOM 变化都把容器纠正到正确的锚点(已到位则无操作)
 		const reattach = () => {
 			const anchor = getAnchor();
-			if (container.parentElement !== anchor) {
-				anchor.appendChild(container);
+			const divider = anchor.querySelector('[class*="Divider_"]');
+			if (container.parentElement !== anchor || (divider && container.nextElementSibling !== divider && divider.parentElement === anchor)) {
+				anchor.insertBefore(container, divider && divider.parentElement === anchor ? divider : null);
 			}
 		};
 		new MutationObserver(reattach).observe(nav, { childList: true, subtree: true });

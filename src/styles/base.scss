@@ -13,3 +13,17 @@ body.material-you-theme ::-webkit-scrollbar-thumb {
 		background-color: rgba(var(--md-accent-color-secondary-rgb), 0.55);
 	}
 }
+
+// 切歌/换方案时颜色平滑过渡
+body.material-you-theme,
+body.material-you-theme footer,
+body.material-you-theme #page_pc_main_nav,
+body.material-you-theme [class*="CardWrapper"],
+body.material-you-theme [class*="WrapperCard"],
+body.material-you-theme [class*="StyledRankCard"],
+body.material-you-theme [class*="containerCls"],
+body.material-you-theme .cmd-button,
+body.material-you-theme .cmd-typography,
+body.material-you-theme .cmd-card {
+	transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, fill 0.3s ease;
+}
