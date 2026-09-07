@@ -116,7 +116,8 @@ body.material-you-theme #page_pc_main_nav {
 		justify-content: flex-end !important;
 	}
 
-	// 原生 MiniModeIconBar_: 设为紧凑 inline-flex，解除 space-between 与多余宽度，间隙统一为 12px
+	// 原生 MiniModeIconBar_: 设为紧凑 inline-flex，解除 space-between 与多余宽度，间隙统一为 12px (Q3 决策实施)
+	// 彻底清除 BadgeWrapper 与右侧的重复外边距叠加，精准对齐 12px 间隙
 	[class*="MiniModeIconBar_"] {
 		width: auto !important;
 		flex-shrink: 0 !important;
@@ -126,10 +127,10 @@ body.material-you-theme #page_pc_main_nav {
 		margin: 0 !important;
 		padding: 0 !important;
 
-		> *:not(:last-child) {
-			margin-right: 12px !important;
+		> [class*="BadgeWrapper_"] {
+			margin-right: 0 !important;
 		}
-		> *:last-child {
+		> *:not(:last-child) {
 			margin-right: 0 !important;
 		}
 	}
@@ -184,31 +185,77 @@ body.material-you-theme #page_pc_main_nav {
 		}
 	}
 
-	// 2. 搜索框
-	[class*="SearchWrapper_"] [class*="cmd-input-wrapper"] {
-		background: rgba(var(--md-accent-color-rgb), 0.06) !important;
-		background-image: none !important;
-		border-radius: 999px !important;
-		border: none !important;
-		&:focus-within {
-			background: rgba(var(--md-accent-color-rgb), 0.12) !important;
-		}
-		// 彻底删除推荐文字前的黑色方块(放大镜按钮/前缀方块)
-		.cmd-input-prefix,
-		.cmd-button,
-		img,
-		[class*="cover"],
-		[style*="background-image"] {
-			display: none !important;
-		}
-		input.cmd-input {
-			padding-left: 14px !important;
-			color: rgba(var(--md-accent-color-secondary-rgb), 0.8) !important;
-			&::placeholder {
-				color: rgba(var(--md-accent-color-secondary-rgb), 0.35) !important;
+		// 2. 搜索框 (Q4 & Q5 决策实施: 消除外层矩形虚影，精准放行放大镜图标并赋予次级主题色)
+		[class*="SearchWrapper_"],
+		[class*="DomWarpper_"] {
+			background: transparent !important;
+			border: none !important;
+			box-shadow: none !important;
+			outline: none !important;
+
+			.searchbox {
+				background-color: transparent !important;
+				background-image: none !important;
+				border: none !important;
+				box-shadow: none !important;
+				outline: none !important;
+				border-radius: 999px !important;
 			}
 		}
-	}
+
+		[class*="SearchWrapper_"] [class*="cmd-input-wrapper"] {
+			background: rgba(var(--md-accent-color-rgb), 0.06) !important;
+			background-image: none !important;
+			border-radius: 999px !important;
+			border: none !important;
+			box-shadow: none !important;
+			outline: none !important;
+			&:focus-within {
+				background: rgba(var(--md-accent-color-rgb), 0.12) !important;
+			}
+
+			// 精确清理推荐歌曲封面图/黑块，严禁误杀放大镜前缀容器
+			img,
+			[class*="cover"],
+			[style*="background-image"] {
+				display: none !important;
+			}
+
+			// 放大镜图标与前缀按钮规范化 (Q4)
+			.cmd-input-prefix,
+			.prefix-icon,
+			[data-testid*="tid_searchbox_btn"] {
+				display: inline-flex !important;
+				align-items: center !important;
+				justify-content: center !important;
+				background: transparent !important;
+				border: none !important;
+				box-shadow: none !important;
+				padding: 0 !important;
+				margin-left: 10px !important;
+				margin-right: 4px !important;
+				color: rgba(var(--md-accent-color-secondary-rgb), 0.8) !important;
+
+				.icon,
+				.cmd-icon,
+				.cmd-icon-search,
+				svg {
+					display: inline-block !important;
+					width: 18px !important;
+					height: 18px !important;
+					color: rgba(var(--md-accent-color-secondary-rgb), 0.8) !important;
+					fill: currentColor !important;
+				}
+			}
+
+			input.cmd-input {
+				padding-left: 2px !important;
+				color: rgba(var(--md-accent-color-secondary-rgb), 0.8) !important;
+				&::placeholder {
+					color: rgba(var(--md-accent-color-secondary-rgb), 0.35) !important;
+				}
+			}
+		}
 
 	// 3. 语音识别(mic)按钮: 增加全圆角
 	[class*="listening"] {

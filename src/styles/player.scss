@@ -7,7 +7,20 @@ body.material-you-theme footer {
 	box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.10);
 }
 
-// 进度条 hover 时间气泡跟随主题
-body.material-you-theme .curtime-thumb .cmd-button {
-	background: var(--colorPrimary1) !important;
+// 进度条 hover 时间气泡跟随主题 (Q1 决策实施)
+// 1. 严格限制仅在 hover 或 dragging 状态下呈现，平静态绝对隐藏，根除常驻左下角遮挡
+// 2. 补齐高对比度白色文字，消除深红底深灰字
+body.material-you-theme {
+	[class*="StyledSliderContainer_"]:not(:hover):not(.dragging) .curtime-thumb,
+	.slider-default:not(:hover):not(.dragging) .curtime-thumb,
+	.slider-vinyl:not(:hover):not(.dragging) .curtime-thumb {
+		display: none !important;
+	}
+
+	.curtime-thumb .cmd-button {
+		background: var(--colorPrimary1) !important;
+		color: #ffffff !important;
+		border: none !important;
+		box-shadow: var(--md-elev-1) !important;
+	}
 }

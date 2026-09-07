@@ -41,13 +41,16 @@
 		color: var(--colorFunction1) !important; // fgBase@50%
 	}
 
-		// ---- 歌单行:行条胶囊化;封面去除只留文字 + 音符符号(与上方导航项严格左对齐) ----
+		// ---- 歌单行:行条胶囊化;封面去除只留文字 + 音符符号(与上方导航项严格左对齐, Q6 实施文本截断盒模型) ----
 		[class*="PlayListItemContent_"] {
+			min-width: 0 !important;
 			.background {
 				border-radius: 999px;
 				display: flex !important;
 				align-items: center;
+				min-width: 0 !important;
 				padding-left: 10px !important; // 上方为 margin 8px + 图标 20px
+				padding-right: 14px !important; // 右侧安全呼吸区，防止字尾贴边硬切
 				&::before {
 					content: '';
 					flex-shrink: 0;
@@ -66,13 +69,15 @@
 			}
 			.background > [class*="cmd-typography"],
 			.background > span {
-				flex: 1;
+				flex: 1 1 0% !important;
+				min-width: 0 !important;
+				width: 0 !important;
 				margin-left: 0 !important;
 				font-size: 14px !important;
 				line-height: 18px !important;
-				overflow: hidden;
-				text-overflow: ellipsis;
-				white-space: nowrap;
+				overflow: hidden !important;
+				text-overflow: ellipsis !important;
+				white-space: nowrap !important;
 			}
 		}
 }

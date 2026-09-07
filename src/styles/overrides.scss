@@ -8,29 +8,41 @@ body.material-you-theme .cmd-button {
 // 卡片家族:圆角 + 阴影层次 + 悬浮抬升
 // E3:卡片不做颜色过渡(大表面过渡是切方案帧冻结的主因),阴影/圆角静态保留
 // 注意: 彻底排除任何表格内组件(如歌曲行内的 CardWrapper), 杜绝半截单元格阴影
-body.material-you-theme {
-	#page_pc_main_tab {
-		[class*="StyledRankCard"],
-		[class*="containerCls"] {
-			border-radius: 12px !important;
-			overflow: hidden;
+	// 卡片家族: 统一 MD3 标准 12px 圆角与漫反射阴影体系 (Q7 决策实施)
+	// 覆盖横向推荐卡片、推荐歌单方形封面、排行榜卡片与轮播图
+	// 注意: 彻底排除任何表格内组件(如歌曲行内的 CardWrapper), 杜绝半截单元格阴影
+	body.material-you-theme {
+		#page_pc_main_tab {
+			[class*="StyledRankCard"],
+			[class*="containerCls"],
+			[class*="CardWrapper_"]:not(.tbody *):not([class*="TableViewer"] *),
+			[class*="CoverContainer_"],
+			[class*="CoverArea_"],
+			[class*="CoverImg_"] img,
+			[class*="Cover_"] img {
+				border-radius: 12px !important;
+				overflow: hidden;
+			}
+
+			// 仅主页活动轮播、横向卡片与推荐歌单封面在 hover 时浮起, 默认常态保持纯净平底, 消除生硬边框
+			&.md-light {
+				[class*="CardWrapper_"]:not(.tbody *):not([class*="TableViewer"] *):hover,
+				[class*="CoverContainer_"]:hover,
+				[class*="StyledRankCard"]:hover,
+				[class*="containerCls"]:hover {
+					box-shadow: var(--md-elev-1) !important;
+				}
+			}
 		}
-		// 仅主页活动轮播与排行榜大卡片在 hover 时浮起, 默认常态保持纯净平底, 消除生硬边框
-		&.md-light {
-			[class*="StyledRankCard"]:hover,
-			[class*="containerCls"]:hover {
-				box-shadow: var(--md-elev-2) !important;
+		// 深色模式卡片底色兜底
+		&.md-dark {
+			[class*="containerCls"],
+			[class*="StyledRankCard"],
+			[class*="CardWrapper_"]:not(.tbody *):not([class*="TableViewer"] *) {
+				background: var(--colorBackgroundWhite) !important;
 			}
 		}
 	}
-	// 深色模式卡片底色兜底
-	&.md-dark {
-		[class*="containerCls"],
-		[class*="StyledRankCard"] {
-			background: var(--colorBackgroundWhite) !important;
-		}
-	}
-}
 
 // 隐藏网易云 Logo(界面项)
 body.material-you-theme.hide-ncm-logo {
