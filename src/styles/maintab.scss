@@ -4,7 +4,9 @@
 
 #page_pc_main_tab {
 	// ---- 导航项 + 资料库项:胶囊化 ----
-	[class*="ItemContainer_"] {
+	// 注意:必须排除 NavItemContainer_(分组容器,"NavItemContainer_" 含 "ItemContainer_" 子串,
+	// 裸 [class*=] 会连分组一起匹配 → hover/圆角套在整组上 = 覆盖全区域的"阴影")
+	[class*="ItemContainer_"]:not([class*="NavItemContainer_"]) {
 		border-radius: 999px !important;
 		transition: background-color 0.15s ease;
 		&:hover:not(.selected) {
@@ -12,15 +14,22 @@
 		}
 	}
 
-	// 激活态:MD3 secondary-container(主色低饱和容器),文字/图标用主色
-	[class*="ItemContainer_"].selected {
-		background: var(--colorSecondary3_1) !important;
+	// 激活态:饱和主题色实底 + 白字(与歌单行 hover/选中高亮同色系,主题色一致)
+	// 文字色分模式:亮色模式下主色饱和 → 白字;暗色模式下主色为浅色 → 用亮前景字
+	[class*="ItemContainer_"].selected:not([class*="NavItemContainer_"]) {
+		background: var(--colorPrimary1) !important;
 		[class*="Title_"],
 		[class*="IconWrapper_"] {
-			color: var(--colorPrimary1) !important;
+			color: var(--colorWhite1) !important;
 		}
 		[class*="Title_"] {
 			font-weight: 600;
+		}
+	}
+	body.md-dark #page_pc_main_tab [class*="ItemContainer_"].selected:not([class*="NavItemContainer_"]) {
+		[class*="Title_"],
+		[class*="IconWrapper_"] {
+			color: var(--colorBlack1) !important;
 		}
 	}
 
@@ -32,10 +41,10 @@
 		color: var(--colorFunction1) !important; // fgBase@50%
 	}
 
-	// ---- 歌单行:封面圆角方块 + 行条圆角(设计图样式) ----
+	// ---- 歌单行:封面圆角方块 + 行条胶囊化(与导航胶囊统一;hover 的主题色高亮随之变胶囊) ----
 	[class*="PlayListItemContent_"] {
 		.background {
-			border-radius: 8px;
+			border-radius: 999px;
 		}
 		.cover {
 			border-radius: 6px;
