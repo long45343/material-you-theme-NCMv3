@@ -1,2 +1,45 @@
-// maintab.scss — 主区(#page_pc_main_tab)
-// 配色由 --colorBackground / --colorBlack* 令牌全局生效;v1 无额外规则。
+// maintab.scss — 左侧栏(#page_pc_main_tab)MD3 化(第三轮需求1,对照用户设计图)
+// 结构类名依据 recon v2.5 侧栏转储(md33recon-sidebar.txt)。
+// 哈希后缀(_ijv59hq 等)随网易云版本变化,故全部使用 [class*="前缀_"] 形式,升级后需复核。
+
+#page_pc_main_tab {
+	// ---- 导航项 + 资料库项:胶囊化 ----
+	[class*="ItemContainer_"] {
+		border-radius: 999px !important;
+		transition: background-color 0.15s ease;
+		&:hover:not(.selected) {
+			background: var(--colorFunction5) !important; // fgBase@6%,双模式通用
+		}
+	}
+
+	// 激活态:MD3 secondary-container(主色低饱和容器),文字/图标用主色
+	[class*="ItemContainer_"].selected {
+		background: var(--colorSecondary3_1) !important;
+		[class*="Title_"],
+		[class*="IconWrapper_"] {
+			color: var(--colorPrimary1) !important;
+		}
+		[class*="Title_"] {
+			font-weight: 600;
+		}
+	}
+
+	// ---- 分组小标签(我的 / 创建的歌单 / 收藏的歌单):小号弱化 ----
+	.mine-area .text,
+	p[class*="TitleContent_"] {
+		font-size: 12px !important;
+		font-weight: 500 !important;
+		color: var(--colorFunction1) !important; // fgBase@50%
+	}
+
+	// ---- 歌单行:封面圆角方块 + 行条圆角(设计图样式) ----
+	[class*="PlayListItemContent_"] {
+		.background {
+			border-radius: 8px;
+		}
+		.cover {
+			border-radius: 6px;
+			overflow: hidden;
+		}
+	}
+}
