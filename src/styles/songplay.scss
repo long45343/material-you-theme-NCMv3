@@ -1,15 +1,46 @@
 // songplay.scss — 播放页(#page_pc_songplay / vinyl)
-// MD3 重塑:保留网易云封面模糊背景,叠一层主题色渐变纱,标题/歌词由令牌统一。
 
-body.material-you-theme #VINYL_COVER_ELEMENT_ID::after {
-	content: "";
-	position: absolute;
-	inset: 0;
-	pointer-events: none;
-	background: linear-gradient(
-		180deg,
-		rgba(var(--md-accent-color-rgb), 0.14) 0%,
-		rgba(var(--md-accent-color-bg-rgb), 0.42) 78%,
-		rgba(var(--md-accent-color-bg-rgb), 0.66) 100%
-	);
+// 第三轮:播放页背景 = 深色平涂(--colorFunction16:暗色主题=主题深底,浅色主题=深板岩)。
+// 实测播放页是"深色舞台"架构:所有表面为白色透明度层级(白 3%/6%/25%),文字浅色 ——
+// 浅色平涂会导致白字白底不可读,必须深底。原生封面渐变与暗化遮罩弃用。
+body.material-you-theme #page_pc_songplay [class*="CoverBackgroundContainer_"] {
+	background: var(--colorFunction16) !important;
+	background-image: none !important;
+}
+// 原生暗化遮罩在深底上无意义,清掉
+body.material-you-theme #page_pc_songplay [class*="CoverBackgroundContainer_"] > .mask {
+	background: transparent !important;
+}
+
+// ---- 第三轮:评论区 MD3 化 —— 原项目 .m-comment 配方原样移植到 3.x 类名 ----
+// 原项目:列表栅格化(auto-fill minmax(450px,1fr), gap 15px);评论卡片 = 主色5%底 +
+// 9px 圆角 + 20/15 内边距 + 无边框 + hover 主色12%;分区标题 18px。
+// 开关语义与原项目一致:body.md-disable-comment-style 时不套用任何评论区样式。
+// 3.x 结构(recon v2.8):CommentAreaContainer > ListWrapper > ul.cmd-list-items > CommentCardWrapper
+body.material-you-theme:not(.md-disable-comment-style) #page_pc_songplay {
+	[class*="CommentAreaContainer_"] {
+		[class*="comment-count"] {
+			font-size: 18px !important;
+			font-weight: normal !important;
+			margin-top: 10px;
+			margin-bottom: 20px;
+		}
+		ul[class*="cmd-list-items"] {
+			display: grid !important;
+			grid-template-columns: repeat(auto-fill, minmax(450px, 1fr)) !important;
+			gap: 15px !important;
+			font-size: 14px !important;
+		}
+		[class*="CommentCardWrapper_"] {
+			background: rgba(var(--md-accent-color-rgb), 0.05) !important;
+			border-radius: 9px !important;
+			padding: 20px 15px !important;
+			border: none !important;
+			box-sizing: border-box;
+			transition: background-color 0.3s ease;
+			&:hover {
+				background: rgba(var(--md-accent-color-rgb), 0.12) !important;
+			}
+		}
+	}
 }

@@ -61,8 +61,15 @@ body.material-you-theme #page_pc_main_nav [title="BetterNCM"] {
 	[class*="SearchWrapper_"] [class*="cmd-input-wrapper"] {
 		background: rgba(var(--md-accent-color-rgb), 0.06) !important;
 		background-image: none !important;
+		border-radius: 999px !important;
 		&:focus-within {
 			background: rgba(var(--md-accent-color-rgb), 0.12) !important;
+		}
+		// 搜索框内的推荐歌曲封面图删除(第三轮):可能是 img、类名含 cover 的块、或内联背景图
+		img,
+		[class*="cover"],
+		[style*="background-image"] {
+			display: none !important;
 		}
 		input.cmd-input {
 			color: rgba(var(--md-accent-color-secondary-rgb), 0.8) !important;

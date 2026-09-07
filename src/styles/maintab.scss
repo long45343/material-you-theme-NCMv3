@@ -52,8 +52,8 @@
 			&::before {
 				content: '';
 				flex-shrink: 0;
-				width: 13px;
-				height: 13px;
+				width: 16px;
+				height: 16px;
 				margin-right: 9px;
 				background-color: var(--colorFunction1); // fgBase@50%,随主题
 				-webkit-mask-repeat: no-repeat;
@@ -69,6 +69,7 @@
 		.background > span {
 			flex: 1;
 			margin-left: 0 !important;
+			font-size: 14px !important;
 		}
 	}
 }
