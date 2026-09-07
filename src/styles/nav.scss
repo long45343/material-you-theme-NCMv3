@@ -53,3 +53,40 @@ body.material-you-theme #page_pc_main_nav [title="BetterNCM"] {
 		height: 16px;
 	}
 }
+
+// ---- 第三轮:搜索框 + 用户胶囊(取材原项目 .m-sch / .m-tool .user)----
+// 原项目配方:输入底 = 主色@6%、聚焦 @12%;文字 = 次色@80%、占位 @30%;放大镜 = 次色;
+// 用户区 = 主色@6% 胶囊、hover @12%。3.x 搜索框原生是封面渐变底,一并压平。
+#page_pc_main_nav {
+	[class*="SearchWrapper_"] [class*="cmd-input-wrapper"] {
+		background: rgba(var(--md-accent-color-rgb), 0.06) !important;
+		background-image: none !important;
+		&:focus-within {
+			background: rgba(var(--md-accent-color-rgb), 0.12) !important;
+		}
+		input.cmd-input {
+			color: rgba(var(--md-accent-color-secondary-rgb), 0.8) !important;
+			&::placeholder {
+				color: rgba(var(--md-accent-color-secondary-rgb), 0.3) !important;
+			}
+		}
+		.cmd-icon-search {
+			background-color: rgba(var(--md-accent-color-secondary-rgb), 1) !important;
+			color: rgba(var(--md-accent-color-secondary-rgb), 1) !important;
+		}
+	}
+	// 识别(mic)按钮同压平,避免与搜索框渐变底并存突兀
+	[class*="listening"] {
+		background: rgba(var(--md-accent-color-rgb), 0.06) !important;
+		background-image: none !important;
+	}
+	// 用户胶囊([class^] 起始匹配避免误伤 MiniModeIconBar_;再排除 IconBar/SearchWrapper 兜底)
+	[class^="Bar_"]:not([class*="IconBar_"]):not([class*="SearchWrapper_"]) {
+		background: rgba(var(--md-accent-color-rgb), 0.06) !important;
+		border-radius: 100px !important;
+		transition: background-color 0.25s ease;
+		&:hover {
+			background: rgba(var(--md-accent-color-rgb), 0.12) !important;
+		}
+	}
+}
