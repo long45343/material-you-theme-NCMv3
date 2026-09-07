@@ -17,7 +17,7 @@ import { argb2Rgb, rgb2Hsl } from './color-utils.js';
 import { schemePresets } from './scheme-presets.js';
 import { initSettingMenu } from './settings.js';
 import { themeFromSourceColor, QuantizerCelebi, Hct, Score, SchemeExpressive, SchemeVibrant, SchemeMonochrome, SchemeFidelity, SchemeTonalSpot, SchemeNeutral, MaterialDynamicColors } from '@material/material-color-utilities';
-import { buildTokenCSS, rgba, mix as mixRgb } from './theme-tokens.js';
+import { buildTokenCSS, rgba, mix as mixRgb, foregroundOf } from './theme-tokens.js';
 
 const migrateSettings = () => {
 	if (getSetting('scheme') == 'dynamic-auto') {
@@ -248,6 +248,16 @@ const refreshTheme = () => {
 		});
 	}
 	lastFaderBg = newBgToken;
+
+	// E1 四期:舞台令牌 —— 播放页/评论区的底色与前景改用我们自有名字的令牌。
+	// 实测网易云在播放页子树局部覆盖 --colorBackground/--colorBlack*(劫持全局令牌),
+	// 自有名字(--md-stage-*)无法被局部覆盖,保证播放页/评论区的深浅与模式一致。
+	const __fg = foregroundOf(colors, mode === 'dark');
+	const __bodyStyle = document.body.style;
+	__bodyStyle.setProperty('--md-stage-bg', bgTokenColor(colors, mode === 'dark'));
+	__bodyStyle.setProperty('--md-stage-fg', rgba(__fg, 1));
+	__bodyStyle.setProperty('--md-stage-fg-muted', rgba(__fg, 0.55));
+	__bodyStyle.setProperty('--md-stage-surface', mode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)');
 
 	tokenStyleController.innerHTML = buildTokenCSS(colors, mode);
 	const __t3 = performance.now();

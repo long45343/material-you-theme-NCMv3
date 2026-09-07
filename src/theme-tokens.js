@@ -19,6 +19,13 @@ export const rgba = ([r, g, b], a = 1) => `rgba(${r},${g},${b},${a})`;
 // 在两个颜色之间按比例混合(t=0 → a,t=1 → b);E3c 背景淡出层需要与 --colorBackground 同式
 export const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
 
+// 模式前景色(与 buildTokenCSS 的 fgBase 同式):浅色主题=深字,深色主题=浅字。
+// 独立导出供 main.js 生成 --md-stage-fg(自有令牌,不受网易云局部令牌覆盖影响)。
+export const foregroundOf = (scheme, dark) => {
+	const base = dark ? mix(scheme.bg, [255, 255, 255], 0.92) : mix(scheme.bgDarken ?? scheme.bg, [0, 0, 0], 0.78);
+	return mix(base, scheme.primary, 0.06);
+};
+
 /**
  * 生成整套 3.1 令牌的 CSS 文本。
  * @param {object} scheme  { primary:[r,g,b], secondary:[r,g,b], bg:[r,g,b], bgDarken:[r,g,b] }

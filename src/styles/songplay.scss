@@ -1,10 +1,10 @@
 // songplay.scss — 播放页(#page_pc_songplay / vinyl)
 
-// 第三轮:播放页背景 = 深色平涂(--colorFunction16:暗色主题=主题深底,浅色主题=深板岩)。
+// 第三轮:播放页背景 = 舞台令牌平涂(自有名字 --md-stage-*,不受网易云局部令牌覆盖影响)。
 // 实测播放页是"深色舞台"架构:所有表面为白色透明度层级(白 3%/6%/25%),文字浅色 ——
-// 浅色平涂会导致白字白底不可读,必须深底。原生封面渐变与暗化遮罩弃用。
+// 深底是它架构上唯一正确的背景;--md-stage-bg 由 JS 按模式写入(暗=主题深底,亮=深板岩)。
 body.material-you-theme #page_pc_songplay [class*="CoverBackgroundContainer_"] {
-	background: var(--colorFunction16) !important;
+	background: var(--md-stage-bg) !important;
 	background-image: none !important;
 }
 // 原生暗化遮罩在深底上无意义,清掉
@@ -12,19 +12,46 @@ body.material-you-theme #page_pc_songplay [class*="CoverBackgroundContainer_"] >
 	background: transparent !important;
 }
 
-// ---- 第三轮:评论区 MD3 化 —— 原项目 .m-comment 配方原样移植到 3.x 类名 ----
-// 原项目:列表栅格化(auto-fill minmax(450px,1fr), gap 15px);评论卡片 = 主色5%底 +
-// 9px 圆角 + 20/15 内边距 + 无边框 + hover 主色12%;分区标题 18px。
-// 开关语义与原项目一致:body.md-disable-comment-style 时不套用任何评论区样式。
-// 3.x 结构(recon v2.8):CommentAreaContainer > ListWrapper > ul.cmd-list-items > CommentCardWrapper
+// ---- 第三轮:评论区 MD3 化 —— 原项目配方移植 + 模式前景翻转 ----
+// 原项目(ncm-css-override.css):.g-single 底色 = 主题背景(浅色主题=浅底);
+// styles.scss:列表栅格化(auto-fill minmax(450px,1fr)),评论卡片 = 主色5%底 +
+// 9px 圆角 + hover 主色12%;开关 = body.md-disable-comment-style 时不套用。
+// 3.x 差异:评论页在播放页上下文里,文字被写死为白色系(白 90%/60%)——
+// 原项目不需要这步(2.x 评论文字原生随主题),3.x 必须把文字翻转为
+// --colorBlack*(随模式翻转的前景色:浅色主题=深字,深色主题=浅字)。
 body.material-you-theme:not(.md-disable-comment-style) #page_pc_songplay {
 	[class*="CommentAreaContainer_"] {
+		// 评论区自己的底:跟随主题背景(浅色主题=浅底,深色主题=深底)
+		background: var(--colorBackground) !important;
+		color: var(--colorBlack1) !important;
+
+		// 播放页上下文的白色系文字 → 模式前景
 		[class*="comment-count"] {
 			font-size: 18px !important;
 			font-weight: normal !important;
 			margin-top: 10px;
 			margin-bottom: 20px;
+			color: var(--colorBlack1) !important;
 		}
+		[class*="comment-content"] {
+			color: var(--colorBlack1) !important; // 原生白@0.9
+		}
+		.comment-operation,
+		.comment-operation .cmd-icon {
+			color: var(--colorFunction1) !important; // fgBase@50%(原生白@0.6)
+		}
+		// 歌曲信息胶囊(原生白@3%底):浅底改淡黑底
+		[class*="TrackInfoContainer_"] {
+			background: rgba(0, 0, 0, 0.05) !important;
+			color: var(--colorBlack1) !important;
+		}
+		// 发布评论按钮(原生白@25%底)
+		button[class*="cmd-button"] {
+			background: rgba(0, 0, 0, 0.06) !important;
+			color: var(--colorBlack1) !important;
+		}
+
+		// 原项目卡片配方
 		ul[class*="cmd-list-items"] {
 			display: grid !important;
 			grid-template-columns: repeat(auto-fill, minmax(450px, 1fr)) !important;
