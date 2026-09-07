@@ -3,52 +3,95 @@
 // 第三轮:播放页背景 = 舞台令牌平涂(自有名字 --md-stage-*,不受网易云局部令牌覆盖影响)。
 // 实测播放页是"深色舞台"架构:所有表面为白色透明度层级(白 3%/6%/25%),文字浅色 ——
 // 深底是它架构上唯一正确的背景;--md-stage-bg 由 JS 按模式写入(暗=主题深底,亮=深板岩)。
-body.material-you-theme #page_pc_songplay [class*="CoverBackgroundContainer_"] {
+body.material-you-theme #page_pc_songplay [class*="CoverBackgroundContainer_"],
+body.material-you-theme #vinyl-page-container [class*="CoverBackgroundContainer_"] {
 	background: var(--md-stage-bg) !important;
 	background-image: none !important;
 }
 // 原生暗化遮罩在深底上无意义,清掉
-body.material-you-theme #page_pc_songplay [class*="CoverBackgroundContainer_"] > .mask {
+body.material-you-theme #page_pc_songplay [class*="CoverBackgroundContainer_"] > .mask,
+body.material-you-theme #vinyl-page-container [class*="CoverBackgroundContainer_"] > .mask {
 	background: transparent !important;
 }
 
-// ---- 第三轮:评论区 MD3 化 —— 原项目配方移植 + 模式前景翻转 ----
+// ---- 亮色模式下播放页文字颜色翻转 (覆盖原生硬编码的 commonTheme.colorWhite*) ----
+body.material-you-theme:not(.md-dark) {
+	#page_pc_songplay,
+	#vinyl-page-container {
+		// 歌曲标题与副标题
+		[class*="TrackTitleContainer_"] .title,
+		.title {
+			color: var(--md-stage-fg) !important;
+		}
+		// 歌手、专辑、来源等元数据
+		[class*="TrackTitleContainer_"] .info-line,
+		[class*="TrackTitleContainer_"] .alias,
+		.info-line,
+		.info-line .info {
+			color: var(--md-stage-fg-muted) !important;
+		}
+		// 标签 (MV、无损等)
+		[class*="TrackTitleContainer_"] .label .cmd-tag {
+			border-color: var(--md-stage-fg-muted) !important;
+			color: var(--md-stage-fg-muted) !important;
+		}
+		// 选项卡 (歌词 / 百科 / 相似推荐)
+		.tab-group {
+			background-color: var(--md-stage-surface) !important;
+			.tab {
+				color: var(--md-stage-fg-muted) !important;
+				&.active {
+					color: var(--md-stage-fg) !important;
+					background-color: rgba(var(--md-accent-color-rgb), 0.15) !important;
+				}
+			}
+		}
+		// 纯音乐提示与默认歌词
+		[class*="NoLyricContainer_"],
+		[class*="LyricDefaultPageContainer_"],
+		[class*="LyricDisplayInnerContainer_"] {
+			color: var(--md-stage-fg-muted) !important;
+		}
+	}
+}
+
+// ---- 第三轮:评论区 MD3 化 —— 舞台自有令牌统一规范 (Q2-A & Q6-A) ----
 // 原项目(ncm-css-override.css):.g-single 底色 = 主题背景(浅色主题=浅底);
 // styles.scss:列表栅格化(auto-fill minmax(450px,1fr)),评论卡片 = 主色5%底 +
 // 9px 圆角 + hover 主色12%;开关 = body.md-disable-comment-style 时不套用。
-// 3.x 差异:评论页在播放页上下文里,文字被写死为白色系(白 90%/60%)——
-// 原项目不需要这步(2.x 评论文字原生随主题),3.x 必须把文字翻转为
-// --colorBlack*(随模式翻转的前景色:浅色主题=深字,深色主题=浅字)。
+// Q2 决议:评论区统一使用舞台自有令牌(--md-stage-bg / --md-stage-fg / --md-stage-surface),
+// 与网易云不可靠局部令牌完全解耦,由 foregroundOf 算法在数学上恒定保障对比度。
+// Q6 决议:卡片默认不设全局 transition,仅在 :hover 伪类启用微过渡,严守性能防线。
 body.material-you-theme:not(.md-disable-comment-style) #page_pc_songplay {
 	[class*="CommentAreaContainer_"] {
-		// 评论区自己的底:跟随主题背景(浅色主题=浅底,深色主题=深底)
-		background: var(--colorBackground) !important;
-		color: var(--colorBlack1) !important;
+		// 评论区底色与前景:统一绑定舞台自有安全令牌
+		background: var(--md-stage-bg) !important;
+		color: var(--md-stage-fg) !important;
 
-		// 播放页上下文的白色系文字 → 模式前景
+		// 播放页上下文的白色系文字 → 舞台模式前景
 		[class*="comment-count"] {
 			font-size: 18px !important;
 			font-weight: normal !important;
 			margin-top: 10px;
 			margin-bottom: 20px;
-			color: var(--colorBlack1) !important;
+			color: var(--md-stage-fg) !important;
 		}
 		[class*="comment-content"] {
-			color: var(--colorBlack1) !important; // 原生白@0.9
+			color: var(--md-stage-fg) !important;
 		}
 		.comment-operation,
 		.comment-operation .cmd-icon {
-			color: var(--colorFunction1) !important; // fgBase@50%(原生白@0.6)
+			color: var(--md-stage-fg-muted) !important;
 		}
-		// 歌曲信息胶囊(原生白@3%底):浅底改淡黑底
+		// 歌曲信息胶囊
 		[class*="TrackInfoContainer_"] {
-			background: rgba(0, 0, 0, 0.05) !important;
-			color: var(--colorBlack1) !important;
+			background: var(--md-stage-surface) !important;
+			color: var(--md-stage-fg) !important;
 		}
-		// 发布评论按钮(原生白@25%底)
+		// 发布评论按钮
 		button[class*="cmd-button"] {
-			background: rgba(0, 0, 0, 0.06) !important;
-			color: var(--colorBlack1) !important;
+			background: var(--md-stage-surface) !important;
+			color: var(--md-stage-fg) !important;
 		}
 
 		// 原项目卡片配方
@@ -64,9 +107,10 @@ body.material-you-theme:not(.md-disable-comment-style) #page_pc_songplay {
 			padding: 20px 15px !important;
 			border: none !important;
 			box-sizing: border-box;
-			transition: background-color 0.3s ease;
+			// Q6: 默认不加 transition, 防止切方案并发重绘
 			&:hover {
 				background: rgba(var(--md-accent-color-rgb), 0.12) !important;
+				transition: background-color 0.2s ease;
 			}
 		}
 	}

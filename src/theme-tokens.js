@@ -12,7 +12,7 @@
 //   Sidebar1-7    = 前景灰阶(同 Black 梯度),Sidebar9-12 = 强调色变体
 
 const PRIMARY_ALPHA = [1, 0.9, 0.8, 0.6, 0.4, 0.3, 0.1, 0.08]; // Primary1..8
-const FOREGROUND_ALPHA = [1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.25, 0.1, 0.06, 0.03]; // x1..x12
+export const FOREGROUND_ALPHA = [1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.25, 0.1, 0.06, 0.03]; // x1..x12
 
 export const rgba = ([r, g, b], a = 1) => `rgba(${r},${g},${b},${a})`;
 

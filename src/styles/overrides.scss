@@ -7,37 +7,28 @@ body.material-you-theme .cmd-button {
 
 // 卡片家族:圆角 + 阴影层次 + 悬浮抬升
 // E3:卡片不做颜色过渡(大表面过渡是切方案帧冻结的主因),阴影/圆角静态保留
-// (E1 三期曾试 content-visibility:auto,因预估尺寸与实际不符产生视口临近震荡——
-//  首页闲置时界面抖动,已撤;若要重试需按页面/容器精确圈定并校准 intrinsic-size)
+// 注意: 彻底排除任何表格内组件(如歌曲行内的 CardWrapper), 杜绝半截单元格阴影
 body.material-you-theme {
-	[class*="StyledRankCard"],
-	[class*="CardWrapper"],
-	[class*="WrapperCard"],
-	[class*="containerCls"] {
-		border-radius: 12px !important;
-		overflow: hidden;
+	#page_pc_main_tab {
+		[class*="StyledRankCard"],
+		[class*="containerCls"] {
+			border-radius: 12px !important;
+			overflow: hidden;
+		}
+		// 仅主页活动轮播与排行榜大卡片在 hover 时浮起, 默认常态保持纯净平底, 消除生硬边框
+		&.md-light {
+			[class*="StyledRankCard"]:hover,
+			[class*="containerCls"]:hover {
+				box-shadow: var(--md-elev-2) !important;
+			}
+		}
 	}
-	&.md-light [class*="StyledRankCard"],
-	&.md-light [class*="CardWrapper"],
-	&.md-light [class*="WrapperCard"],
-	&.md-light [class*="containerCls"] {
-		box-shadow: var(--md-elev-1);
-	}
-	&.md-light [class*="CardWrapper"]:hover,
-	&.md-light [class*="WrapperCard"]:hover {
-		background-color: rgba(var(--md-accent-color-secondary-rgb), 0.06) !important;
-		box-shadow: var(--md-elev-2);
-	}
-	&.md-dark [class*="CardWrapper"]:hover,
-	&.md-dark [class*="WrapperCard"]:hover {
-		background-color: rgba(255, 255, 255, 0.06) !important;
-	}
-	// 深色:Function2/运行时硬编码白的卡片兜底
-	&.md-dark [class*="containerCls"],
-	&.md-dark [class*="StyledRankCard"],
-	&.md-dark [class*="CardWrapper"],
-	&.md-dark [class*="WrapperCard"] {
-		background: var(--colorBackgroundWhite) !important;
+	// 深色模式卡片底色兜底
+	&.md-dark {
+		[class*="containerCls"],
+		[class*="StyledRankCard"] {
+			background: var(--colorBackgroundWhite) !important;
+		}
 	}
 }
 

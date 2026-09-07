@@ -1,56 +1,167 @@
 // nav.scss — 顶栏(#page_pc_main_nav,含搜索/头像/功能图标/窗口控制)
 // 3.1 的 "nav" 是顶栏;左侧栏为 LeftScrollContainer。配色由 --colorSidebar* 令牌生效。
 
-// 设置入口:与原生 cmd-badge 图标同尺寸同基线(inline-block)
+// 设置入口: 与原生 cmd-badge / cmd-icon-setting 同尺寸(20×20)同基线(inline-flex)
 #page_pc_main_nav .md-settings-menu-container {
 	display: inline-flex !important;
 	align-items: center;
 	justify-content: center;
 	flex-shrink: 0;
-	width: 28px !important;
-	height: 28px !important;
-	margin: 0 6px;
+	width: 20px !important;
+	height: 20px !important;
+	margin: 0 !important;
 	overflow: visible;
 	vertical-align: middle;
 	position: relative;
-	z-index: 9999; // 压过头像挂件,保证可点
+	z-index: 9999;
 }
-// 常驻可见底色(不依赖 mask 渲染)
-#page_pc_main_nav #md-theme-setting-btn > div {
-	background-color: rgba(var(--md-accent-color-secondary-rgb), 0.75) !important;
-	-webkit-mask-size: 78% !important;
-}
+
 #page_pc_main_nav #md-theme-setting-btn {
-	width: 28px !important;
-	height: 28px !important;
-	> div {
+	width: 20px !important;
+	height: 20px !important;
+	padding: 0 !important;
+	border: none !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	background: transparent !important;
+	cursor: pointer;
+	color: var(--colorSidebar2);
+	transition: color 0.2s ease;
+
+	.cmd-icon {
+		display: inline-flex !important;
+		align-items: center !important;
+		justify-content: center !important;
+		width: 20px !important;
+		height: 20px !important;
+		svg {
+			width: 20px !important;
+			height: 20px !important;
+		}
+	}
+
+	&:hover,
+	&.active {
+		color: var(--colorSidebar1) !important;
+	}
+}
+
+// BNCM(chromatic)管理器入口: 归位到图标行, 与原生 ⚙ 同规格(20×20)
+// 设置齿轮所在的 BadgeWrapper 设为 inline-flex 并自适应宽度
+body.material-you-theme #page_pc_main_nav div[class*="BadgeWrapper_"] {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 12px !important;
+	width: auto !important;
+	position: relative !important;
+	overflow: visible !important;
+	margin: 0 !important;
+
+	// 彻底隐藏设置/音符容器内的未读小红点/小黄点挂件，消除悬空杂质
+	[class*="cmd-badge-"],
+	.cmd-badge-rightTop,
+	.cmd-badge-solid {
+		display: none !important;
+	}
+}
+
+body.material-you-theme #page_pc_main_nav [title="BetterNCM"] {
+	position: static !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 20px !important;
+	height: 20px !important;
+	margin: 0 !important;
+	svg {
 		width: 20px !important;
 		height: 20px !important;
 	}
 }
 
-// BNCM(chromatic)管理器入口:归位到图标行,与原生 ⚙ 同规格(20×20)
-// D-rev-A 最终形态:克隆与 ⚙ 同住 BadgeWrapper,其宽度随徽章状态在 20-40px 波动,
-// 且 Chromium 91 不支持 :has()(无法按"含克隆"条件加宽父容器)。
-// 方案:wrapper 提为 relative(零布局影响),克隆绝对定位锚在其右外侧 ——
-// 视觉上紧贴 ⚙ 右侧、落在 ⚙ 与我们按钮之间的既有间隙里,零 DOM 干预。
-body.material-you-theme #page_pc_main_nav div[class*="BadgeWrapper_"] {
-	position: relative;
-}
-body.material-you-theme #page_pc_main_nav [title="BetterNCM"] {
-	position: absolute !important;
-	left: 22px !important;
-	top: 0 !important;
-	display: inline-flex !important;
-	align-items: center;
-	justify-content: center;
-	width: 20px !important;
-	height: 20px !important;
-	margin: 0 !important;
-	font-size: 16px !important;
-	svg {
-		width: 16px;
-		height: 16px;
+// 顶栏图标外层容器与排布重构:
+// 严禁 JS appendChild 搬移 React 节点 (前车之鉴: React 协调冲突 -> 致命卡死/崩溃)
+// 纯 CSS 解决间隙与对齐:
+// 1. 统一所有图标视口为 20×20
+// 2. 将 MiniModeIconBar 设置为 inline-flex 并解除固定宽度与 space-between，采用单一 gap: 12px
+// 3. 将调色盘紧随其后作为兄弟项，前边距对齐为 12px
+// 4. 彻底隐藏删除 mini 模式按钮与相关占位逻辑
+// 5. 分隔线 | 两侧保留 14px 呼吸间距
+// 6. 右侧窗口控制 (🗕 - 12px - 🗖/还原 - 12px - ✕)
+body.material-you-theme #page_pc_main_nav {
+	// 尺寸统一
+	.cmd-icon,
+	.md-settings-menu-container,
+	#md-theme-setting-btn,
+	[title="BetterNCM"] {
+		width: 20px !important;
+		height: 20px !important;
+		font-size: 20px !important;
+		svg {
+			width: 20px !important;
+			height: 20px !important;
+		}
+	}
+
+	// 调色盘与前项音符间距对齐为严格的 12px
+	.md-settings-menu-container {
+		margin: 0 0 0 12px !important;
+	}
+
+	[class*="IconBar_"] {
+		width: auto !important;
+		display: flex !important;
+		align-items: center !important;
+		justify-content: flex-end !important;
+	}
+
+	// 原生 MiniModeIconBar_: 设为紧凑 inline-flex，解除 space-between 与多余宽度，间隙统一为 12px
+	[class*="MiniModeIconBar_"] {
+		width: auto !important;
+		flex-shrink: 0 !important;
+		display: inline-flex !important;
+		align-items: center !important;
+		justify-content: flex-start !important;
+		margin: 0 !important;
+		padding: 0 !important;
+
+		> *:not(:last-child) {
+			margin-right: 12px !important;
+		}
+		> *:last-child {
+			margin-right: 0 !important;
+		}
+	}
+
+	// 彻底删除/隐藏 mini 模式按钮与相关占位逻辑
+	[title="mini模式"],
+	[title="全屏纯享"],
+	.cmd-icon-mini,
+	[data-log*="btn_pc_main_nav_mini"],
+	[class*="popover_pyebpyq"] {
+		display: none !important;
+	}
+
+	// 竖线分隔符
+	[class*="Divider_"] {
+		display: block !important;
+		height: 14px !important;
+		margin: 0 14px !important;
+		flex-shrink: 0 !important;
+		border-right: 1px solid var(--colorSidebar5) !important;
+	}
+
+	// 右侧窗口控制按钮组
+	[class*="WindowOpBarContainer_"] {
+		display: inline-flex !important;
+		align-items: center !important;
+		gap: 12px !important;
+		flex-shrink: 0 !important;
+
+		> * {
+			margin: 0 !important;
+		}
 	}
 }
 
@@ -58,36 +169,59 @@ body.material-you-theme #page_pc_main_nav [title="BetterNCM"] {
 // 原项目配方:输入底 = 主色@6%、聚焦 @12%;文字 = 次色@80%、占位 @30%;放大镜 = 次色;
 // 用户区 = 主色@6% 胶囊、hover @12%。3.x 搜索框原生是封面渐变底,一并压平。
 #page_pc_main_nav {
+	// ---- 第三轮:搜索框 + 返回键 + 语音键 + 用户胶囊 ----
+	// 1. 历史前进/后退键: 增加全圆角 pill 规约
+	[class*="HistoryIconBackground_"] {
+		border-radius: 100px !important;
+		border-color: rgba(var(--md-accent-color-secondary-rgb), 0.2) !important;
+		background: rgba(var(--md-accent-color-rgb), 0.04) !important;
+		display: flex !important;
+		align-items: center !important;
+		justify-content: center !important;
+		transition: background-color 0.2s ease;
+		&:hover:not(.disable) {
+			background: rgba(var(--md-accent-color-rgb), 0.1) !important;
+		}
+	}
+
+	// 2. 搜索框
 	[class*="SearchWrapper_"] [class*="cmd-input-wrapper"] {
 		background: rgba(var(--md-accent-color-rgb), 0.06) !important;
 		background-image: none !important;
 		border-radius: 999px !important;
+		border: none !important;
 		&:focus-within {
 			background: rgba(var(--md-accent-color-rgb), 0.12) !important;
 		}
-		// 搜索框内的推荐歌曲封面图删除(第三轮):可能是 img、类名含 cover 的块、或内联背景图
+		// 彻底删除推荐文字前的黑色方块(放大镜按钮/前缀方块)
+		.cmd-input-prefix,
+		.cmd-button,
 		img,
 		[class*="cover"],
 		[style*="background-image"] {
 			display: none !important;
 		}
 		input.cmd-input {
+			padding-left: 14px !important;
 			color: rgba(var(--md-accent-color-secondary-rgb), 0.8) !important;
 			&::placeholder {
-				color: rgba(var(--md-accent-color-secondary-rgb), 0.3) !important;
+				color: rgba(var(--md-accent-color-secondary-rgb), 0.35) !important;
 			}
 		}
-		.cmd-icon-search {
-			background-color: rgba(var(--md-accent-color-secondary-rgb), 1) !important;
-			color: rgba(var(--md-accent-color-secondary-rgb), 1) !important;
-		}
 	}
-	// 识别(mic)按钮同压平,避免与搜索框渐变底并存突兀
+
+	// 3. 语音识别(mic)按钮: 增加全圆角
 	[class*="listening"] {
 		background: rgba(var(--md-accent-color-rgb), 0.06) !important;
 		background-image: none !important;
+		border-radius: 100px !important;
+		transition: background-color 0.2s ease;
+		&:hover {
+			background: rgba(var(--md-accent-color-rgb), 0.12) !important;
+		}
 	}
-	// 用户胶囊([class^] 起始匹配避免误伤 MiniModeIconBar_;再排除 IconBar/SearchWrapper 兜底)
+
+	// 4. 用户胶囊
 	[class^="Bar_"]:not([class*="IconBar_"]):not([class*="SearchWrapper_"]) {
 		background: rgba(var(--md-accent-color-rgb), 0.06) !important;
 		border-radius: 100px !important;

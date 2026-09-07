@@ -6,7 +6,7 @@ BetterNCM/chromatic 主题插件 `MaterialYouThemeNCMv3`,为网易云 **3.1.39**
 
 - 仓库:`D:\EDCs\code\material-you-theme-NCMv3`(remote: github.com/long45343/material-you-theme-NCMv3)
 - 数据目录:`C:\Users\Manet_Kirby\Documents\betterncm`(环境变量 BETTERNCM_PROFILE)
-- 决策与验证记录:`docs/FIX-CHECKLIST.md`(第一轮)+ `docs/ROUND2-FIX-CHECKLIST.md`(第二轮,含 BNCM 原生层事故与打点结论)——**新会话先读这两个文件**
+- 决策与验证记录:`docs/FIX-CHECKLIST.md`(第一轮)+ `docs/ROUND2-FIX-CHECKLIST.md`(第二轮)+ `docs/ROUND3-FIX-CHECKLIST.md`(第三轮 UI 与舞台令牌)——**新会话先读这些文件**
 
 ## 已验证可用(不要动坏)
 
@@ -39,6 +39,25 @@ BetterNCM/chromatic 主题插件 `MaterialYouThemeNCMv3`,为网易云 **3.1.39**
 5. React 管理的 DOM 节点禁止 JS 搬移;自建节点带重挂守卫;
 6. CEF = **Chromium 91**:`:has()` 不可用(整条规则会被丢弃),View Transitions 不可用。
 
-## 下一步(第三轮)
+## 当前状态与已完成工作(第三轮打磨)
 
-用户将进行 **UI 调整**(具体需求待用户提出)。动手前建议先读 ROUND2 文件的"性能结论"——任何 UI 改动都别引入大表面颜色过渡或热路径写盘。
+第三轮已全面落地实施并在 NCM 3.1 客户端完成实测与验证，涉及模块明细如下：
+
+### 1. 核心问题修复
+- **播放页浅色文字白化根治**：深入逆向解包确认曲名/歌词直接消费 `--colorWhite1..12`，在 `main.js` 中动态针对 `#page_pc_songplay` 与 `#vinyl-page-container` 直写内联 `--colorWhite*` 与 `--colorBlack*` 深度深色前景，并在 `songplay.scss` 中补充样式兜底。
+- **评论区 MD3 规范统一**：评论区彻底解耦网易云局部不可靠令牌，统一绑定自有舞台令牌 `--md-stage-bg` / `--md-stage-fg` / `--md-stage-surface`，卡片过渡限定于 `:hover` 规避重绘风暴。
+- **背景模糊层取色闭环 D6**：实现 `updateDynamicColorFromBuiltInBG()` 从 3.1 模糊图源取色，无背景时优雅兜底封面。
+- **右键菜单/托盘图标染色纠偏**：修正为 Windows 原生层所需的 `#AABBGGRR`（BGR 逆序），递归遍历 JSON 精确替换 `image_color`。
+- **歌单列表整行卡片化与阴影柔化**：精确定位 `[class*="StyledTableViewer_"] .tbody .tr`，悬浮态将序号、封面、标题、专辑、操作、时长一并纳入同一整行卡片阴影；升级 `--md-elev-*` 为大半径漫反射环境光，杜绝黑脏边。
+- **侧栏歌单行对齐**：左边距调整为 10px，文字对齐至 `x = 36px` 垂直基准线，字号规范为 14px/18px。
+- **顶栏细节与控制按钮加粗**：
+  - 搜索框前缀黑色方块已隐藏；返回键与语音识别按键胶囊圆角化；
+  - 彻底删除并隐藏进入迷你模式的冗余按钮与逻辑；
+  - 窗口控制图标（最小化、向下还原、最大化、关闭）完成用户指定 Material Symbols 替换并统一描边加粗 20%；
+  - 调色盘重绘为用户指定 Material Symbols 调色板 SVG，四个按钮在流中均等对齐；
+  - 底部播放进度条已完全回滚至原生基准。
+
+### 2. 待继续跟进/测试事项
+- 重启后观察四个顶栏图标在不同缩放比下的等距渲染稳定性；
+- 验证暗色与亮色模式下整套界面的视觉一致性。
+

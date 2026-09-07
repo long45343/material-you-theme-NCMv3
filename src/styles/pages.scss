@@ -1,2 +1,47 @@
 // pages.scss — 歌单/搜索等其他页面
-// 配色由令牌全局生效;v1 无额外规则。
+// 配色由令牌全局生效;
+
+// 歌单详情页与表格整行胶囊卡片化: 将序号、标题、专辑、操作、时长统统纳入同一整行浮动阴影
+body.material-you-theme {
+	// 针对 3.1 客户端的真实表格类名 [class*="StyledTableViewer_"]
+	[class*="StyledTableViewer_"] .tbody .tr,
+	[class*="TableViewer"] .tbody .tr,
+	.tbody .tr {
+		border-radius: 12px !important;
+		margin: 3px 0 !important;
+		padding: 0 4px !important;
+		box-sizing: border-box !important;
+		transition: background-color 0.2s ease, box-shadow 0.2s ease !important;
+
+		// 确保行内所有子单元格自身不绘制背景与局部阴影，保证整行视觉浑然一体
+		td,
+		[class*="Cell"],
+		[class*="CardWrapper"],
+		[class*="WrapperCard"],
+		.CoverContainer {
+			background: transparent !important;
+			box-shadow: none !important;
+			border-radius: 0 !important;
+		}
+	}
+
+	&.md-light {
+		[class*="StyledTableViewer_"] .tbody .tr:hover,
+		[class*="StyledTableViewer_"] .tbody .tr.selected,
+		[class*="TableViewer"] .tbody .tr:hover,
+		[class*="TableViewer"] .tbody .tr.selected {
+			background-color: var(--colorBackgroundWhite) !important;
+			box-shadow: var(--md-elev-1) !important;
+		}
+	}
+
+	&.md-dark {
+		[class*="StyledTableViewer_"] .tbody .tr:hover,
+		[class*="StyledTableViewer_"] .tbody .tr.selected,
+		[class*="TableViewer"] .tbody .tr:hover,
+		[class*="TableViewer"] .tbody .tr.selected {
+			background-color: rgba(255, 255, 255, 0.08) !important;
+			box-shadow: var(--md-elev-1) !important;
+		}
+	}
+}

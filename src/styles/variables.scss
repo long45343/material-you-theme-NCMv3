@@ -4,10 +4,10 @@
 body.material-you-theme {
 	--bottombar-height: 90px; // 设置面板高度计算兼容
 
-	// MD3 elevation 阴影(浅色下可见,深色下弱化)
-	--md-elev-1: 0 1px 2px rgba(0, 0, 0, 0.16), 0 1px 3px 1px rgba(0, 0, 0, 0.08);
-	--md-elev-2: 0 1px 2px rgba(0, 0, 0, 0.18), 0 2px 6px 2px rgba(0, 0, 0, 0.10);
-	--md-elev-3: 0 2px 8px 2px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.20);
+	// MD3 elevation 柔和环境漫反射阴影 (取材原项目, 杜绝脏黑生硬边框)
+	--md-elev-1: 0 4px 12px -2px rgba(0, 0, 0, 0.05), 0 2px 6px -1px rgba(0, 0, 0, 0.03);
+	--md-elev-2: 0 8px 24px -4px rgba(0, 0, 0, 0.08), 0 4px 10px -2px rgba(0, 0, 0, 0.04);
+	--md-elev-3: 0 12px 32px 0 rgba(0, 0, 0, 0.10), 0 6px 14px -2px rgba(0, 0, 0, 0.06);
 
 	// 页面语义色(按亮暗映射到动态令牌)
 	--md-page-bg: var(--md-dynamic-light-bg);

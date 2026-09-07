@@ -41,35 +41,38 @@
 		color: var(--colorFunction1) !important; // fgBase@50%
 	}
 
-	// ---- 歌单行:行条胶囊化;封面去除只留文字 + 音符符号(取材原项目 mask-image 手法,
-	//      图标用官方 Material Symbols music_note 路径,与原项目图标库同源)(第三轮需求2/3) ----
-	[class*="PlayListItemContent_"] {
-		.background {
-			border-radius: 999px;
-			display: flex !important;
-			align-items: center;
-			padding-left: 14px !important;
-			&::before {
-				content: '';
-				flex-shrink: 0;
-				width: 16px;
-				height: 16px;
-				margin-right: 9px;
-				background-color: var(--colorFunction1); // fgBase@50%,随主题
-				-webkit-mask-repeat: no-repeat;
-				-webkit-mask-position: center;
-				-webkit-mask-size: contain;
-				-webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24' width='24'%3E%3Cpath d='M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z'/%3E%3C/svg%3E");
+		// ---- 歌单行:行条胶囊化;封面去除只留文字 + 音符符号(与上方导航项严格左对齐) ----
+		[class*="PlayListItemContent_"] {
+			.background {
+				border-radius: 999px;
+				display: flex !important;
+				align-items: center;
+				padding-left: 10px !important; // 上方为 margin 8px + 图标 20px
+				&::before {
+					content: '';
+					flex-shrink: 0;
+					width: 16px;
+					height: 16px;
+					margin-right: 10px;
+					background-color: var(--colorFunction1); // fgBase@50%,随主题
+					-webkit-mask-repeat: no-repeat;
+					-webkit-mask-position: center;
+					-webkit-mask-size: contain;
+					-webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24' width='24'%3E%3Cpath d='M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z'/%3E%3C/svg%3E");
+				}
+			}
+			.cover {
+				display: none !important;
+			}
+			.background > [class*="cmd-typography"],
+			.background > span {
+				flex: 1;
+				margin-left: 0 !important;
+				font-size: 14px !important;
+				line-height: 18px !important;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
 			}
 		}
-		.cover {
-			display: none !important;
-		}
-		.background > [class*="cmd-typography"],
-		.background > span {
-			flex: 1;
-			margin-left: 0 !important;
-			font-size: 14px !important;
-		}
-	}
 }

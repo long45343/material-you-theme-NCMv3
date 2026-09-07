@@ -17,7 +17,7 @@ import { argb2Rgb, rgb2Hsl } from './color-utils.js';
 import { schemePresets } from './scheme-presets.js';
 import { initSettingMenu } from './settings.js';
 import { themeFromSourceColor, QuantizerCelebi, Hct, Score, SchemeExpressive, SchemeVibrant, SchemeMonochrome, SchemeFidelity, SchemeTonalSpot, SchemeNeutral, MaterialDynamicColors } from '@material/material-color-utilities';
-import { buildTokenCSS, rgba, mix as mixRgb, foregroundOf } from './theme-tokens.js';
+import { buildTokenCSS, rgba, mix as mixRgb, foregroundOf, FOREGROUND_ALPHA } from './theme-tokens.js';
 
 const migrateSettings = () => {
 	if (getSetting('scheme') == 'dynamic-auto') {
@@ -221,6 +221,58 @@ const ensureBgFader = () => {
 };
 const bgTokenColor = (colors, dark) => rgba(dark ? colors.bg : mixRgb(colors.bg, [226, 229, 233], 0.55), 1);
 
+// Q1 实施: 直写播放页内联样式 (--colorBlack* & --colorWhite*) 并维护守卫
+// 逆向发现: NCM 播放页组件原生直接消费 --colorWhite1..12 作为主要文字颜色!
+// 在亮色模式下, 必须将 --colorWhite* 和 --colorBlack* 都覆写为深色前景;
+// 在暗色模式下, --colorWhite* 保持浅色/纯白, --colorBlack* 覆写为浅色前景。
+let currentSongplayFg = null;
+const applySongplayInlineTokens = (fg) => {
+	if (fg) currentSongplayFg = fg;
+	if (!currentSongplayFg) return;
+	const isDark = window.mdThemeType === 'dark';
+	const targets = [
+		document.querySelector('#page_pc_songplay'),
+		document.querySelector('#vinyl-page-container'),
+		document.querySelector('[class*="VinylPageContainer_"]'),
+	].filter(Boolean);
+
+	if (targets.length === 0) return;
+
+	targets.forEach((el) => {
+		FOREGROUND_ALPHA.forEach((alpha, idx) => {
+			const fgVal = rgba(currentSongplayFg, alpha);
+			// 播放页内不论消费 --colorBlack 还是 --colorWhite 均保证对比度
+			el.style.setProperty(`--colorBlack${idx + 1}`, fgVal);
+			if (!isDark) {
+				// 亮色模式下: 颠覆网易云把 --colorWhite* 写死为白色的逻辑, 写入深色前景
+				el.style.setProperty(`--colorWhite${idx + 1}`, fgVal);
+			} else {
+				// 暗色模式下: 恢复标准纯白透明度
+				el.style.setProperty(`--colorWhite${idx + 1}`, rgba([255, 255, 255], alpha));
+			}
+		});
+	});
+};
+
+const setupSongplayWatcher = () => {
+	let timer = null;
+	const check = () => {
+		const page = document.querySelector('#page_pc_songplay') || document.querySelector('#vinyl-page-container');
+		if (page && currentSongplayFg) {
+			const isDark = window.mdThemeType === 'dark';
+			const firstWhiteVal = page.style.getPropertyValue('--colorWhite1');
+			const targetWhiteVal = isDark ? rgba([255, 255, 255], FOREGROUND_ALPHA[0]) : rgba(currentSongplayFg, FOREGROUND_ALPHA[0]);
+			if (firstWhiteVal !== targetWhiteVal) {
+				applySongplayInlineTokens();
+			}
+		}
+	};
+	new MutationObserver(() => {
+		clearTimeout(timer);
+		timer = setTimeout(check, 50);
+	}).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
+};
+
 const refreshTheme = () => {
 	const __t0 = performance.now();
 	updateDynamicTheme();
@@ -249,17 +301,20 @@ const refreshTheme = () => {
 	}
 	lastFaderBg = newBgToken;
 
-	// E1 四期:舞台令牌 —— 播放页/评论区的底色与前景改用我们自有名字的令牌。
-	// 实测网易云在播放页子树局部覆盖 --colorBackground/--colorBlack*(劫持全局令牌),
-	// 自有名字(--md-stage-*)无法被局部覆盖,保证播放页/评论区的深浅与模式一致。
-	const __fg = foregroundOf(colors, mode === 'dark');
-	const __bodyStyle = document.body.style;
-	__bodyStyle.setProperty('--md-stage-bg', bgTokenColor(colors, mode === 'dark'));
-	__bodyStyle.setProperty('--md-stage-fg', rgba(__fg, 1));
-	__bodyStyle.setProperty('--md-stage-fg-muted', rgba(__fg, 0.55));
-	__bodyStyle.setProperty('--md-stage-surface', mode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)');
+		// E1 四期:舞台令牌 —— 播放页/评论区的底色与前景改用我们自有名字的令牌。
+		// 实测网易云在播放页子树局部覆盖 --colorBackground/--colorBlack*(劫持全局令牌),
+		// 自有名字(--md-stage-*)无法被局部覆盖,保证播放页/评论区的深浅与模式一致。
+		const __fg = foregroundOf(colors, mode === 'dark');
+		const __bodyStyle = document.body.style;
+		__bodyStyle.setProperty('--md-stage-bg', bgTokenColor(colors, mode === 'dark'));
+		__bodyStyle.setProperty('--md-stage-fg', rgba(__fg, 1));
+		__bodyStyle.setProperty('--md-stage-fg-muted', rgba(__fg, 0.55));
+		__bodyStyle.setProperty('--md-stage-surface', mode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)');
 
-	tokenStyleController.innerHTML = buildTokenCSS(colors, mode);
+		// Q1 决议: JS 动态直写播放页内联 --colorBlack1..12, 击穿原生局部劫持
+		applySongplayInlineTokens(__fg);
+
+		tokenStyleController.innerHTML = buildTokenCSS(colors, mode);
 	const __t3 = performance.now();
 
 	// 强调色变量(设置面板与插件样式消费)
@@ -294,14 +349,34 @@ const applyNativeAppearance = (primary) => {
 	} catch (e) { /* 原生接口失败静默跳过 */ }
 };
 
-// ---------------------------------------------------------------- 菜单染色(D8,S3 实测 payload 为明文)
-// winhelper.updateMenu / winhelper.popupMenu 的 args[1][0].content 是菜单 JSON 字符串:
-//   文本项:image_color = "#AARRGGBB";按钮组:url 内 svg_color='#AARRGGBB'(normal=b3/hot=ff/disabled=4d)。
-// 策略:保留原 alpha,后 6 位 RGB 替换为主题主色。
-const primaryRGBHex = () => {
+// ---------------------------------------------------------------- 菜单染色(D8: 遵循 Windows 原生菜单 BGR 格式)
+// winhelper.updateMenu / winhelper.popupMenu 的 args[0].content (或 args[1][0].content) 是菜单 JSON 字符串:
+// 关键: 网易云底层 Windows 原生层菜单接受的颜色通道格式为 #AABBGGRR (BGR 逆序),
+// 原项目明确采用了 rgb.reverse()。若误用标准 RGB 会导致红蓝倒置(如青色变橙红)。
+const primaryBGRHex = () => {
 	const c = getActiveColors().primary ?? [103, 80, 164];
-	return c.map((v) => v.toString(16).padStart(2, '0')).join('').toUpperCase();
+	const bgr = [c[2], c[1], c[0]]; // RGB -> BGR
+	return bgr.map((v) => v.toString(16).padStart(2, '0')).join('').toLowerCase();
 };
+
+const updateMenuColorsInObject = (obj, bgrHex) => {
+	if (!obj) return;
+	if (Array.isArray(obj)) {
+		obj.forEach((item) => updateMenuColorsInObject(item, bgrHex));
+		return;
+	}
+	if (typeof obj === 'object') {
+		if (obj.image_color && typeof obj.image_color === 'string') {
+			const alphaMatch = obj.image_color.match(/^#([0-9a-fA-F]{2})/);
+			const alpha = alphaMatch ? alphaMatch[1] : 'ff';
+			obj.image_color = `#${alpha}${bgrHex}`;
+		}
+		if (obj.children) {
+			updateMenuColorsInObject(obj.children, bgrHex);
+		}
+	}
+};
+
 let menuChannelPatched = false;
 const hookChannelMenus = () => {
 	if (getSetting('menu-coloring', true) !== true) return;
@@ -311,13 +386,23 @@ const hookChannelMenus = () => {
 	channel.call = function (name, ...args) {
 		try {
 			if (name === 'winhelper.updateMenu' || name === 'winhelper.popupMenu') {
-				const menuObj = args[1]?.[0];
-				if (menuObj && typeof menuObj.content === 'string' && menuObj.content.indexOf('#') !== -1) {
-					const rgb = primaryRGBHex();
-					// 保留原 8 位色中的 alpha(前 2 位),RGB 部分替换为主题主色
-					menuObj.content = menuObj.content
-						.replace(/("image_color":"#)([0-9a-fA-F]{2})([0-9a-fA-F]{6})/g, `$1$2${rgb}`)
-						.replace(/(svg_color='#)([0-9a-fA-F]{2})([0-9a-fA-F]{6})/g, `$1$2${rgb}`);
+				const bgr = primaryBGRHex();
+				// 3.1 客户端签名可能为 (name, l, r) 其中 l.content 为 JSON 字符串
+				for (let i = 0; i < args.length; i++) {
+					const arg = args[i];
+					const targetObj = (arg && typeof arg === 'object' && arg.content) ? arg : (Array.isArray(arg) && arg[0]?.content ? arg[0] : null);
+					if (targetObj && typeof targetObj.content === 'string') {
+						try {
+							const parsed = JSON.parse(targetObj.content);
+							updateMenuColorsInObject(parsed, bgr);
+							targetObj.content = JSON.stringify(parsed);
+						} catch (e) {
+							// 兜底正则替换
+							targetObj.content = targetObj.content
+								.replace(/("image_color":"#)([0-9a-fA-F]{2})([0-9a-fA-F]{6})/g, `$1$2${bgr}`)
+								.replace(/(svg_color='#)([0-9a-fA-F]{2})([0-9a-fA-F]{6})/g, `$1$2${bgr}`);
+						}
+					}
 				}
 			}
 		} catch (e) { /* 染色失败不影响原调用 */ }
@@ -428,28 +513,85 @@ const updateDynamicColorFromCover = (img) => {
 	const ranked = Score.score(quantizedColors);
 	const top = ranked[0];
 
-	window.mdCoverDominantColor = top;
-	document.body.dispatchEvent(new CustomEvent('md-dominant-color-change'));
+		window.mdCoverDominantColor = top;
+		document.body.dispatchEvent(new CustomEvent('md-dominant-color-change'));
 
-	refreshTheme();
-}
+		refreshTheme();
+	}
 
-let lastCoverSrc = '';
-const scanCover = () => {
-	const img = getCoverElement();
-	if (!img) return;
-	if (img.src === lastCoverSrc) return;
-	if (img.complete && img.naturalWidth > 0) {
-		lastCoverSrc = img.src;
-		updateDynamicColorFromCover(img);
-	} else {
-		img.addEventListener('load', () => {
-			if (img.src === lastCoverSrc) return;
+	// Q3 实施: 补全 3.1 播放页内置模糊背景取色逻辑 (闭环 D6 决策)
+	const BG_CANDIDATES = [
+		'#page_pc_songplay [class*="CoverBackgroundContainer_"] img',
+		'#page_pc_songplay [class*="CoverBackgroundContainer_"] canvas',
+		'#page_pc_songplay img[class*="bg"]',
+	];
+	const updateDynamicColorFromBuiltInBG = () => {
+		let targetEl = null;
+		for (const sel of BG_CANDIDATES) {
+			const el = document.querySelector(sel);
+			if (el) {
+				if (el.tagName.toLowerCase() === 'img' && isUsableCover(el)) {
+					targetEl = el;
+					break;
+				} else if (el.tagName.toLowerCase() === 'canvas' && el.width > 0 && el.height > 0) {
+					targetEl = el;
+					break;
+				}
+			}
+		}
+		if (!targetEl) {
+			// 背景层未就绪或未进入播放页时，平滑回退到封面色
+			window.mdBGEnhancedDominantColor = window.mdCoverDominantColor;
+			return;
+		}
+
+		try {
+			const canvas = document.createElement('canvas');
+			canvas.width = 48;
+			canvas.height = 48;
+			const ctx = canvas.getContext('2d');
+			ctx.drawImage(targetEl, 0, 0, 48, 48);
+			const pixels = chunk(ctx.getImageData(0, 0, 48, 48).data, 4).map((pixel) => {
+				return ((pixel[3] << 24 >>> 0) | (pixel[0] << 16 >>> 0) | (pixel[1] << 8 >>> 0) | pixel[2]) >>> 0;
+			});
+
+			const quantizedColors = QuantizerCelebi.quantize(pixels, 128);
+			const ranked = Score.score(quantizedColors);
+			const top = ranked[0];
+
+			if (top) {
+				window.mdBGEnhancedDominantColor = top;
+				document.body.dispatchEvent(new CustomEvent('md-dominant-color-change'));
+				refreshTheme();
+			}
+		} catch (e) {
+			window.mdBGEnhancedDominantColor = window.mdCoverDominantColor;
+		}
+	};
+
+	let lastCoverSrc = '';
+	const scanCover = () => {
+		const img = getCoverElement();
+		if (!img) return;
+		if (img.src === lastCoverSrc) return;
+		if (img.complete && img.naturalWidth > 0) {
 			lastCoverSrc = img.src;
 			updateDynamicColorFromCover(img);
-		}, { once: true });
-	}
-};
+			// 若当前启用了播放页背景取色源，在切歌时同步尝试更新背景取色
+			if ((window.mdDynamicThemeColorSource ?? getSetting('dynamic-theme-color-source', 'cover')) === 'bg-enhanced') {
+				setTimeout(updateDynamicColorFromBuiltInBG, 200);
+			}
+		} else {
+			img.addEventListener('load', () => {
+				if (img.src === lastCoverSrc) return;
+				lastCoverSrc = img.src;
+				updateDynamicColorFromCover(img);
+				if ((window.mdDynamicThemeColorSource ?? getSetting('dynamic-theme-color-source', 'cover')) === 'bg-enhanced') {
+					setTimeout(updateDynamicColorFromBuiltInBG, 200);
+				}
+			}, { once: true });
+		}
+	};
 const setupCoverWatcher = () => {
 	let timer = null;
 	new MutationObserver(() => {
@@ -507,16 +649,14 @@ const injectSettingsEntry = () => {
 		}, 200);
 
 		try {
-			// 锚点:原生徽章行末尾(E4:✉ ⚙ [我们]);IconBar 本体在分隔线之前,徽章数量变化不影响
+			// 锚点: 原生徽章行末尾 (纯 CSS 排布，严禁 JS appendChild 搬移 React 节点导致崩溃)
 			const getAnchor = () => nav.querySelector('[class*="MiniModeIconBar_"]')?.parentElement
 				?? nav.querySelector('img.cmd-image')?.closest('[class*="Bar_"]')?.parentElement
 				?? nav;
 
-			// React 重渲染会抹掉它不认识的子节点;且图标行可能晚于注入时机挂载:
-			// 每次 DOM 变化都把容器纠正到正确的锚点(已到位则无操作)
 			const reattach = () => {
 				const anchor = getAnchor();
-				const divider = anchor.querySelector('[class*="Divider_"]');
+				const divider = anchor.querySelector('[class*="Divider_"]') || anchor.querySelector('[class*="WindowOpBarContainer_"]');
 				if (container.parentElement !== anchor || (divider && container.nextElementSibling !== divider && divider.parentElement === anchor)) {
 					anchor.insertBefore(container, divider && divider.parentElement === anchor ? divider : null);
 				}
@@ -525,22 +665,83 @@ const injectSettingsEntry = () => {
 			new MutationObserver(reattach).observe(nav, { childList: true, subtree: true });
 
 			// 隐藏网易云皮肤切换入口(主题启用时与主题冲突;连同未读红点)
-			const hideSkinEntry = () => {
-				const icon = nav.querySelector('.cmd-icon-skin');
-				if (!icon) return;
-				const btn = icon.closest('[class*="BadgeWrapper"]') ?? icon.closest('.cmd-badge') ?? icon.closest('button') ?? icon;
-				btn.style.display = 'none';
-			};
-			hideSkinEntry();
-			new MutationObserver(hideSkinEntry).observe(nav, { childList: true, subtree: true });
-		} catch (e) {
-			console.error('MD3 nav decorations', e);
-		}
+				const hideSkinEntry = () => {
+					const icon = nav.querySelector('.cmd-icon-skin');
+					if (!icon) return;
+					const btn = icon.closest('[class*="BadgeWrapper"]') ?? icon.closest('.cmd-badge') ?? icon.closest('button') ?? icon;
+					btn.style.display = 'none';
+				};
+				hideSkinEntry();
+				new MutationObserver(hideSkinEntry).observe(nav, { childList: true, subtree: true });
+			} catch (e) {
+				console.error('MD3 nav decorations', e);
+			}
 
-		// BNCM 入口归位在第二轮以纯 CSS 实现(docs/FIX-CHECKLIST.md 工作项 D):
-		// 严禁 JS 搬移/插入 React 管理的节点(96b51cc 前车之鉴:协调冲突 → 首启崩溃)
-	});
-};
+			// BNCM 入口归位在第二轮以纯 CSS 实现(docs/FIX-CHECKLIST.md 工作项 D):
+			// 严禁 JS 搬移/插入 React 管理的节点(96b51cc 前车之鉴:协调冲突 → 首启崩溃)
+		});
+	};
+
+		// ---------------------------------------------------------------- 顶栏图标重绘 (全部统一定制 Material Symbols，加粗 20%)
+		const CUSTOM_NAV_SVGS = {
+			setting: `<svg width="20" height="20" viewBox="0 -960 960 960" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="m388-80-20-126q-19-7-40-19t-37-25l-118 54-93-164 108-79q-2-9-2.5-20.5T185-480q0-9 .5-20.5T188-521L80-600l93-164 118 54q16-13 37-25t40-18l20-127h184l20 126q19 7 40.5 18.5T669-710l118-54 93 164-108 77q2 10 2.5 21.5t.5 21.5q0 10-.5 21t-2.5 21l108 78-93 164-118-54q-16 13-36.5 25.5T592-206L572-80H388Zm48-60h88l14-112q33-8 62.5-25t53.5-41l106 46 40-72-94-69q4-17 6.5-33.5T715-480q0-17-2-33.5t-7-33.5l94-69-40-72-106 46q-23-26-52-43.5T538-708l-14-112h-88l-14 112q-34 7-63.5 24T306-642l-106-46-40 72 94 69q-4 17-6.5 33.5T245-480q0 17 2.5 33.5T254-413l-94 69 40 72 106-46q24 24 53.5 41t62.5 25l14 112Zm44-210q54 0 92-38t38-92q0-54-38-92t-92-38q-54 0-92 38t-38 92q0 54 38 92t92 38Zm0-130Z" fill="currentColor"></path></svg>`,
+			message: `<svg width="20" height="20" viewBox="0 -960 960 960" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M140-160q-24 0-42-18t-18-42v-520q0-24 18-42t42-18h680q24 0 42 18t18 42v520q0 24-18 42t-42 18H140Zm340-302L140-685v465h680v-465L480-462Zm0-60 336-218H145l335 218ZM140-685v-55 520-465Z" fill="currentColor"></path></svg>`,
+			// 最小化: 用户指定居中横线 + 20% 加粗(stroke-width=24)
+			minimize: `<svg width="20" height="20" viewBox="0 -960 960 960" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M200-450v-60h560v60H200Z" fill="currentColor" stroke="currentColor" stroke-width="24" stroke-linejoin="round"></path></svg>`,
+			// 还原: 双层圆角框 + 20% 加粗(stroke-width=24)
+			restore: `<svg width="20" height="20" viewBox="0 -960 960 960" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M373-253q-93-93-93-227t93-227q93-93 227-93t227 93q93 93 93 227t-93 227q-93 93-227 93t-227-93Zm-79 81q-113-14-183.5-103.5T40-480q0-115 70.5-204.5T294-788v58q-88 16-141 87.5T100-480q0 91 53 162.5T294-230v58Zm306-308Zm183.5 183.5Q860-373 860-480t-76.5-183.5Q707-740 600-740t-183.5 76.5Q340-587 340-480t76.5 183.5Q493-220 600-220t183.5-76.5Z" fill="currentColor" stroke="currentColor" stroke-width="24" stroke-linejoin="round"></path></svg>`,
+			// 最大化: 正圆线框 + 20% 加粗(stroke-width=24)
+			maximize: `<svg width="20" height="20" viewBox="0 -960 960 960" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M480-80q-82 0-155-31.5t-127.5-86Q143-252 111.5-325T80-480q0-83 31.5-156t86-127Q252-817 325-848.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 82-31.5 155T763-197.5q-54 54.5-127 86T480-80Zm0-60q142 0 241-99.5T820-480q0-142-99-241t-241-99q-141 0-240.5 99T140-480q0 141 99.5 240.5T480-140Zm0-340Z" fill="currentColor" stroke="currentColor" stroke-width="24" stroke-linejoin="round"></path></svg>`,
+			// 关闭: 交叉细线 + 20% 加粗(stroke-width 从 80 提升至 100)
+			close: `<svg width="20" height="20" viewBox="0 -960 960 960" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M 200 -200 L 760 -760 M 200 -760 L 760 -200" stroke="currentColor" stroke-width="100" stroke-linecap="round"/></svg>`
+		};
+
+	const replaceIconSvg = (container, svgHtml, key) => {
+		if (!container) return;
+		if (container.getAttribute('data-custom-icon') === key) return;
+		container.setAttribute('data-custom-icon', key);
+		container.innerHTML = svgHtml;
+	};
+
+	const setupHeaderIconsWatcher = () => {
+		const applyIcons = () => {
+			const nav = document.querySelector('#page_pc_main_nav');
+			if (!nav) return;
+
+			// 1. 设置 (排除 BetterNCM)
+			const settingIcon = nav.querySelector('[data-testid="tid_header_setting_btn"] .cmd-icon, .cmd-icon-setting:not([title="BetterNCM"])');
+			replaceIconSvg(settingIcon, CUSTOM_NAV_SVGS.setting, 'setting');
+
+			// 2. 消息
+			const msgIcon = nav.querySelector('[data-testid="tid_header_msg_btn"] .cmd-icon, .cmd-icon-message');
+			replaceIconSvg(msgIcon, CUSTOM_NAV_SVGS.message, 'message');
+
+			// 3. 最小化
+			const minIcon = nav.querySelector('[title="最小化"] .cmd-icon, .cmd-icon-minimize');
+			replaceIconSvg(minIcon, CUSTOM_NAV_SVGS.minimize, 'minimize');
+
+			// 4. 还原
+			const restoreIcon = nav.querySelector('[title="向下还原"] .cmd-icon, .cmd-icon-restore');
+			replaceIconSvg(restoreIcon, CUSTOM_NAV_SVGS.restore, 'restore');
+
+			// 5. 最大化
+			const maxIcon = nav.querySelector('[title="最大化"] .cmd-icon, .cmd-icon-maximize');
+			replaceIconSvg(maxIcon, CUSTOM_NAV_SVGS.maximize, 'maximize');
+
+			// 6. 关闭
+			const closeIcon = nav.querySelector('[title="关闭"] .cmd-icon, .cmd-icon-close');
+			replaceIconSvg(closeIcon, CUSTOM_NAV_SVGS.close, 'close');
+
+			// 7. 彻底隐藏删除 mini 模式按钮与相关占位
+			nav.querySelectorAll('[title="mini模式"], [title="全屏纯享"], .cmd-icon-mini, [data-log*="btn_pc_main_nav_mini"]').forEach((el) => {
+				const target = el.closest('button') ?? el.closest('.icon') ?? el;
+				target.style.setProperty('display', 'none', 'important');
+			});
+		};
+
+		applyIcons();
+		new MutationObserver(applyIcons).observe(document.body, { childList: true, subtree: true });
+	};
 
 // ---------------------------------------------------------------- 问候语(保留,样式层可选消费)
 const updateGreeting = () => {
@@ -568,10 +769,12 @@ const boot = () => {
 	updateGreeting();
 	setInterval(updateGreeting, 30000);
 
-	hookChannelMenus(); // 菜单染色(D8):尽早挂,晚于 applyScheme 以取到主色
-	setupCoverWatcher();
-	probeAndWatchAppThemeMode();
-	injectSettingsEntry();
+			hookChannelMenus(); // 菜单染色(D8):尽早挂,晚于 applyScheme 以取到主色
+			setupCoverWatcher();
+			setupSongplayWatcher(); // Q1: 播放页挂载/更新守卫
+			setupHeaderIconsWatcher(); // 顶栏图标 Material Symbols 重绘
+			probeAndWatchAppThemeMode();
+		injectSettingsEntry();
 };
 
 if (document.readyState === 'loading') {
