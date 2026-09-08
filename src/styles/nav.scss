@@ -93,14 +93,15 @@ body.material-you-theme #page_pc_main_nav {
 	// 1. 声明 margin-left: 16px !important，保障窄窗下绝不侵入左侧麦克风胶囊；
 	// 2. 声明 margin-right: 24px !important，与右侧功能图标保持舒适呼吸留白；
 	// 3. justify-self: end 保证宽屏时贴近右侧，窄屏时在安全边距内弹性停靠。
-	.Bar_b2jgnke,
-	[class*="Bar_b2jgnke"],
-	[class^="Bar_"]:not([class*="IconBar_"]):not([class*="SearchWrapper_"]) {
-		transform: none !important;
-		margin-left: 16px !important;
-		margin-right: 24px !important;
-		justify-self: end !important;
-	}
+		// 1. 用户指定：左右两边各保留 12px 间隙
+		.Bar_b2jgnke,
+		[class*="Bar_b2jgnke"],
+		[class^="Bar_"]:not([class*="IconBar_"]):not([class*="SearchWrapper_"]) {
+			transform: none !important;
+			margin-left: 12px !important;
+			margin-right: 12px !important;
+			justify-self: end !important;
+		}
 
 	// 尺寸统一
 	.cmd-icon,
