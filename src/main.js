@@ -682,61 +682,86 @@ const injectSettingsEntry = () => {
 		});
 	};
 
-		// ---------------------------------------------------------------- 顶栏图标重绘 (全部统一定制 Material Symbols，加粗 20%)
-		const CUSTOM_NAV_SVGS = {
-			setting: `<svg width="20" height="20" viewBox="0 -960 960 960" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="m388-80-20-126q-19-7-40-19t-37-25l-118 54-93-164 108-79q-2-9-2.5-20.5T185-480q0-9 .5-20.5T188-521L80-600l93-164 118 54q16-13 37-25t40-18l20-127h184l20 126q19 7 40.5 18.5T669-710l118-54 93 164-108 77q2 10 2.5 21.5t.5 21.5q0 10-.5 21t-2.5 21l108 78-93 164-118-54q-16 13-36.5 25.5T592-206L572-80H388Zm48-60h88l14-112q33-8 62.5-25t53.5-41l106 46 40-72-94-69q4-17 6.5-33.5T715-480q0-17-2-33.5t-7-33.5l94-69-40-72-106 46q-23-26-52-43.5T538-708l-14-112h-88l-14 112q-34 7-63.5 24T306-642l-106-46-40 72 94 69q-4 17-6.5 33.5T245-480q0 17 2.5 33.5T254-413l-94 69 40 72 106-46q24 24 53.5 41t62.5 25l14 112Zm44-210q54 0 92-38t38-92q0-54-38-92t-92-38q-54 0-92 38t-38 92q0 54 38 92t92 38Zm0-130Z" fill="currentColor"></path></svg>`,
-			message: `<svg width="20" height="20" viewBox="0 -960 960 960" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M140-160q-24 0-42-18t-18-42v-520q0-24 18-42t42-18h680q24 0 42 18t18 42v520q0 24-18 42t-42 18H140Zm340-302L140-685v465h680v-465L480-462Zm0-60 336-218H145l335 218ZM140-685v-55 520-465Z" fill="currentColor"></path></svg>`,
-			// 最小化: 用户指定居中横线 + 20% 加粗(stroke-width=24)
-			minimize: `<svg width="20" height="20" viewBox="0 -960 960 960" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M200-450v-60h560v60H200Z" fill="currentColor" stroke="currentColor" stroke-width="24" stroke-linejoin="round"></path></svg>`,
-			// 还原: 双层圆角框 + 20% 加粗(stroke-width=24)
-			restore: `<svg width="20" height="20" viewBox="0 -960 960 960" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M373-253q-93-93-93-227t93-227q93-93 227-93t227 93q93 93 93 227t-93 227q-93 93-227 93t-227-93Zm-79 81q-113-14-183.5-103.5T40-480q0-115 70.5-204.5T294-788v58q-88 16-141 87.5T100-480q0 91 53 162.5T294-230v58Zm306-308Zm183.5 183.5Q860-373 860-480t-76.5-183.5Q707-740 600-740t-183.5 76.5Q340-587 340-480t76.5 183.5Q493-220 600-220t183.5-76.5Z" fill="currentColor" stroke="currentColor" stroke-width="24" stroke-linejoin="round"></path></svg>`,
-			// 最大化: 正圆线框 + 20% 加粗(stroke-width=24)
-			maximize: `<svg width="20" height="20" viewBox="0 -960 960 960" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M480-80q-82 0-155-31.5t-127.5-86Q143-252 111.5-325T80-480q0-83 31.5-156t86-127Q252-817 325-848.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 82-31.5 155T763-197.5q-54 54.5-127 86T480-80Zm0-60q142 0 241-99.5T820-480q0-142-99-241t-241-99q-141 0-240.5 99T140-480q0 141 99.5 240.5T480-140Zm0-340Z" fill="currentColor" stroke="currentColor" stroke-width="24" stroke-linejoin="round"></path></svg>`,
-			// 关闭: 交叉细线 + 20% 加粗(stroke-width 从 80 提升至 100)
-			close: `<svg width="20" height="20" viewBox="0 -960 960 960" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M 200 -200 L 760 -760 M 200 -760 L 760 -200" stroke="currentColor" stroke-width="100" stroke-linecap="round"/></svg>`
+			// ---------------------------------------------------------------- 顶栏图标重绘 (全部统一定制 Material Symbols，加粗 20%)
+			const CUSTOM_NAV_SVGS = {
+				setting: `<svg width="20" height="20" viewBox="0 -960 960 960" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="m388-80-20-126q-19-7-40-19t-37-25l-118 54-93-164 108-79q-2-9-2.5-20.5T185-480q0-9 .5-20.5T188-521L80-600l93-164 118 54q16-13 37-25t40-18l20-127h184l20 126q19 7 40.5 18.5T669-710l118-54 93 164-108 77q2 10 2.5 21.5t.5 21.5q0 10-.5 21t-2.5 21l108 78-93 164-118-54q-16 13-36.5 25.5T592-206L572-80H388Zm48-60h88l14-112q33-8 62.5-25t53.5-41l106 46 40-72-94-69q4-17 6.5-33.5T715-480q0-17-2-33.5t-7-33.5l94-69-40-72-106 46q-23-26-52-43.5T538-708l-14-112h-88l-14 112q-34 7-63.5 24T306-642l-106-46-40 72 94 69q-4 17-6.5 33.5T245-480q0 17 2.5 33.5T254-413l-94 69 40 72 106-46q24 24 53.5 41t62.5 25l14 112Zm44-210q54 0 92-38t38-92q0-54-38-92t-92-38q-54 0-92 38t-38 92q0 54 38 92t92 38Zm0-130Z" fill="currentColor"></path></svg>`,
+				message: `<svg width="20" height="20" viewBox="0 -960 960 960" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M140-160q-24 0-42-18t-18-42v-520q0-24 18-42t42-18h680q24 0 42 18t18 42v520q0 24-18 42t-42 18H140Zm340-302L140-685v465h680v-465L480-462Zm0-60 336-218H145l335 218ZM140-685v-55 520-465Z" fill="currentColor"></path></svg>`,
+				// 最小化: 用户指定居中横线 + 20% 加粗(stroke-width=24)
+				minimize: `<svg width="20" height="20" viewBox="0 -960 960 960" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M200-450v-60h560v60H200Z" fill="currentColor" stroke="currentColor" stroke-width="24" stroke-linejoin="round"></path></svg>`,
+				// 还原: 双层圆角框 + 20% 加粗(stroke-width=24)
+				restore: `<svg width="20" height="20" viewBox="0 -960 960 960" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M373-253q-93-93-93-227t93-227q93-93 227-93t227 93q93 93 93 227t-93 227q-93 93-227 93t-227-93Zm-79 81q-113-14-183.5-103.5T40-480q0-115 70.5-204.5T294-788v58q-88 16-141 87.5T100-480q0 91 53 162.5T294-230v58Zm306-308Zm183.5 183.5Q860-373 860-480t-76.5-183.5Q707-740 600-740t-183.5 76.5Q340-587 340-480t76.5 183.5Q493-220 600-220t183.5-76.5Z" fill="currentColor" stroke="currentColor" stroke-width="24" stroke-linejoin="round"></path></svg>`,
+				// 最大化: 正圆线框 + 20% 加粗(stroke-width=24)
+				maximize: `<svg width="20" height="20" viewBox="0 -960 960 960" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M480-80q-82 0-155-31.5t-127.5-86Q143-252 111.5-325T80-480q0-83 31.5-156t86-127Q252-817 325-848.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 82-31.5 155T763-197.5q-54 54.5-127 86T480-80Zm0-60q142 0 241-99.5T820-480q0-142-99-241t-241-99q-141 0-240.5 99T140-480q0 141 99.5 240.5T480-140Zm0-340Z" fill="currentColor" stroke="currentColor" stroke-width="24" stroke-linejoin="round"></path></svg>`,
+				// 关闭: 交叉细线 + 20% 加粗(stroke-width 从 80 提升至 100)
+				close: `<svg width="20" height="20" viewBox="0 -960 960 960" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M 200 -200 L 760 -760 M 200 -760 L 760 -200" stroke="currentColor" stroke-width="100" stroke-linecap="round"/></svg>`,
+				// 搜索放大镜 (用户指定 Material Symbols search, 适度加粗以匹配顶栏)
+				search: `<svg width="18" height="18" viewBox="0 -960 960 960" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M796-121 533-384q-30 26-70 40.5T378-329q-108 0-183-75t-75-181q0-106 75-181t182-75q106 0 180.5 75T632-585q0 43-14 83t-42 75l264 262-44 44ZM377-389q81 0 138-57.5T572-585q0-81-57-138.5T377-781q-82 0-139.5 57.5T180-585q0 81 57.5 138.5T377-389Z" fill="currentColor" stroke="currentColor" stroke-width="20" stroke-linejoin="round"></path></svg>`,
+				// 返回箭头 (用户指定 Material Symbols arrow_back, 适度加粗)
+				back: `<svg width="18" height="18" viewBox="0 -960 960 960" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M400-240 160-480l241-241 43 42-169 169h526v60H275l168 168-43 42Z" fill="currentColor" stroke="currentColor" stroke-width="20" stroke-linejoin="round"></path></svg>`,
+				// 听歌识曲 (用户指定 Material Symbols mic, 适度加粗)
+				mic: `<svg width="20" height="20" viewBox="0 -960 960 960" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M408-453.92q-29-30.91-29-75.08v-251q0-41.67 29.44-70.83Q437.88-880 479.94-880t71.56 29.17Q581-821.67 581-780v251q0 44.17-29 75.08Q523-423 480-423t-72-30.92ZM480-651Zm-30 531v-136q-106-11-178-89t-72-184h60q0 91 64.29 153t155.5 62q91.21 0 155.71-62Q700-438 700-529h60q0 106-72 184t-178 89v136h-60Zm59.5-376.5Q521-510 521-529v-251q0-17-11.79-28.5T480-820q-17.42 0-29.21 11.5T439-780v251q0 19 11.5 32.5T480-483q18 0 29.5-13.5Z" fill="currentColor" stroke="currentColor" stroke-width="16" stroke-linejoin="round"></path></svg>`
+			};
+
+		const replaceIconSvg = (container, svgHtml, key) => {
+			if (!container) return;
+			if (container.getAttribute('data-custom-icon') === key) return;
+			container.setAttribute('data-custom-icon', key);
+			container.innerHTML = svgHtml;
 		};
 
-	const replaceIconSvg = (container, svgHtml, key) => {
-		if (!container) return;
-		if (container.getAttribute('data-custom-icon') === key) return;
-		container.setAttribute('data-custom-icon', key);
-		container.innerHTML = svgHtml;
-	};
+		const setupHeaderIconsWatcher = () => {
+			const applyIcons = () => {
+				const nav = document.querySelector('#page_pc_main_nav');
+				if (!nav) return;
 
-	const setupHeaderIconsWatcher = () => {
-		const applyIcons = () => {
-			const nav = document.querySelector('#page_pc_main_nav');
-			if (!nav) return;
+				// 1. 设置 (排除 BetterNCM)
+				const settingIcon = nav.querySelector('[data-testid="tid_header_setting_btn"] .cmd-icon, .cmd-icon-setting:not([title="BetterNCM"])');
+				replaceIconSvg(settingIcon, CUSTOM_NAV_SVGS.setting, 'setting');
 
-			// 1. 设置 (排除 BetterNCM)
-			const settingIcon = nav.querySelector('[data-testid="tid_header_setting_btn"] .cmd-icon, .cmd-icon-setting:not([title="BetterNCM"])');
-			replaceIconSvg(settingIcon, CUSTOM_NAV_SVGS.setting, 'setting');
+				// 2. 消息
+				const msgIcon = nav.querySelector('[data-testid="tid_header_msg_btn"] .cmd-icon, .cmd-icon-message');
+				replaceIconSvg(msgIcon, CUSTOM_NAV_SVGS.message, 'message');
 
-			// 2. 消息
-			const msgIcon = nav.querySelector('[data-testid="tid_header_msg_btn"] .cmd-icon, .cmd-icon-message');
-			replaceIconSvg(msgIcon, CUSTOM_NAV_SVGS.message, 'message');
+				// 3. 最小化
+				const minIcon = nav.querySelector('[title="最小化"] .cmd-icon, .cmd-icon-minimize');
+				replaceIconSvg(minIcon, CUSTOM_NAV_SVGS.minimize, 'minimize');
 
-			// 3. 最小化
-			const minIcon = nav.querySelector('[title="最小化"] .cmd-icon, .cmd-icon-minimize');
-			replaceIconSvg(minIcon, CUSTOM_NAV_SVGS.minimize, 'minimize');
+				// 4. 还原
+				const restoreIcon = nav.querySelector('[title="向下还原"] .cmd-icon, .cmd-icon-restore');
+				replaceIconSvg(restoreIcon, CUSTOM_NAV_SVGS.restore, 'restore');
 
-			// 4. 还原
-			const restoreIcon = nav.querySelector('[title="向下还原"] .cmd-icon, .cmd-icon-restore');
-			replaceIconSvg(restoreIcon, CUSTOM_NAV_SVGS.restore, 'restore');
+				// 5. 最大化
+				const maxIcon = nav.querySelector('[title="最大化"] .cmd-icon, .cmd-icon-maximize');
+				replaceIconSvg(maxIcon, CUSTOM_NAV_SVGS.maximize, 'maximize');
 
-			// 5. 最大化
-			const maxIcon = nav.querySelector('[title="最大化"] .cmd-icon, .cmd-icon-maximize');
-			replaceIconSvg(maxIcon, CUSTOM_NAV_SVGS.maximize, 'maximize');
+				// 6. 关闭
+				const closeIcon = nav.querySelector('[title="关闭"] .cmd-icon, .cmd-icon-close');
+				replaceIconSvg(closeIcon, CUSTOM_NAV_SVGS.close, 'close');
 
-			// 6. 关闭
-			const closeIcon = nav.querySelector('[title="关闭"] .cmd-icon, .cmd-icon-close');
-			replaceIconSvg(closeIcon, CUSTOM_NAV_SVGS.close, 'close');
+				// 7. 返回箭头
+				const backIcon = nav.querySelector('[data-testid="tid_header_back_btn"]');
+				replaceIconSvg(backIcon, CUSTOM_NAV_SVGS.back, 'back');
 
-			// 7. 彻底隐藏删除 mini 模式按钮与相关占位
-			nav.querySelectorAll('[title="mini模式"], [title="全屏纯享"], .cmd-icon-mini, [data-log*="btn_pc_main_nav_mini"]').forEach((el) => {
-				const target = el.closest('button') ?? el.closest('.icon') ?? el;
-				target.style.setProperty('display', 'none', 'important');
-			});
+				// 8. 搜索框放大镜
+				const searchBtn = nav.querySelector('[data-testid*="tid_searchbox_btn"] .cmd-button-content')
+					|| nav.querySelector('.cmd-input-prefix .prefix-icon .cmd-button-content')
+					|| nav.querySelector('.cmd-input-prefix .prefix-icon');
+				replaceIconSvg(searchBtn, CUSTOM_NAV_SVGS.search, 'search');
+
+				// 9. 听歌识曲
+				const micBtn = nav.querySelector('[data-testid="tid_header_recognize_btn"]');
+				replaceIconSvg(micBtn, CUSTOM_NAV_SVGS.mic, 'mic');
+
+				// 10. 彻底隐藏删除 mini 模式按钮与相关占位
+				nav.querySelectorAll('[title="mini模式"], [title="全屏纯享"], .cmd-icon-mini, [data-log*="btn_pc_main_nav_mini"]').forEach((el) => {
+					const target = el.closest('button') ?? el.closest('.icon') ?? el;
+					target.style.setProperty('display', 'none', 'important');
+				});
+			};
+
+			applyIcons();
+			new MutationObserver(applyIcons).observe(document.body, { childList: true, subtree: true });
+		};
 		};
 
 		applyIcons();

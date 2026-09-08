@@ -172,26 +172,42 @@ body.material-you-theme #page_pc_main_nav {
 #page_pc_main_nav {
 	// ---- 第三轮:搜索框 + 返回键 + 语音键 + 用户胶囊 ----
 	// 1. 历史前进/后退键: 增加全圆角 pill 规约
-	[class*="HistoryIconBackground_"] {
-		border-radius: 100px !important;
-		border-color: rgba(var(--md-accent-color-secondary-rgb), 0.2) !important;
-		background: rgba(var(--md-accent-color-rgb), 0.04) !important;
-		display: flex !important;
-		align-items: center !important;
-		justify-content: center !important;
-		transition: background-color 0.2s ease;
-		&:hover:not(.disable) {
-			background: rgba(var(--md-accent-color-rgb), 0.1) !important;
-		}
-	}
+		// 1. 历史前进/后退键: 增加全圆角 pill 规约，彻底消除外层方形边框
+		[class*="HistoryIconBackground_"] {
+			border-radius: 100px !important;
+			border: none !important;
+			box-shadow: none !important;
+			outline: none !important;
+			background: rgba(var(--md-accent-color-rgb), 0.04) !important;
+			display: flex !important;
+			align-items: center !important;
+			justify-content: center !important;
+			transition: background-color 0.2s ease;
+			color: rgba(var(--md-accent-color-secondary-rgb), 0.8) !important;
 
-		// 2. 搜索框 (Q4 & Q5 决策实施: 消除外层矩形虚影，精准放行放大镜图标并赋予次级主题色)
+			.arr,
+			svg {
+				color: currentColor !important;
+				fill: currentColor !important;
+			}
+
+			&:hover:not(.disable) {
+				background: rgba(var(--md-accent-color-rgb), 0.1) !important;
+			}
+		}
+
+		// 2. 搜索框 (消除外层矩形虚影，精准放行放大镜图标，彻底消灭 ::after 渐变伪元素边框)
 		[class*="SearchWrapper_"],
 		[class*="DomWarpper_"] {
 			background: transparent !important;
 			border: none !important;
 			box-shadow: none !important;
 			outline: none !important;
+
+			&::before,
+			&::after {
+				display: none !important;
+			}
 
 			.searchbox {
 				background-color: transparent !important;
@@ -200,6 +216,11 @@ body.material-you-theme #page_pc_main_nav {
 				box-shadow: none !important;
 				outline: none !important;
 				border-radius: 999px !important;
+
+				&::before,
+				&::after {
+					display: none !important;
+				}
 			}
 		}
 
@@ -210,6 +231,12 @@ body.material-you-theme #page_pc_main_nav {
 			border: none !important;
 			box-shadow: none !important;
 			outline: none !important;
+
+			&::before,
+			&::after {
+				display: none !important;
+			}
+
 			&:focus-within {
 				background: rgba(var(--md-accent-color-rgb), 0.12) !important;
 			}
@@ -221,7 +248,7 @@ body.material-you-theme #page_pc_main_nav {
 				display: none !important;
 			}
 
-			// 放大镜图标与前缀按钮规范化 (Q4)
+			// 放大镜图标与前缀按钮规范化 (左移贴边、粗细位置对齐)
 			.cmd-input-prefix,
 			.prefix-icon,
 			[data-testid*="tid_searchbox_btn"] {
@@ -233,14 +260,17 @@ body.material-you-theme #page_pc_main_nav {
 				box-shadow: none !important;
 				padding: 0 !important;
 				margin-left: 10px !important;
-				margin-right: 4px !important;
+				margin-right: 0 !important;
 				color: rgba(var(--md-accent-color-secondary-rgb), 0.8) !important;
 
 				.icon,
 				.cmd-icon,
 				.cmd-icon-search,
+				.cmd-button-content,
 				svg {
-					display: inline-block !important;
+					display: inline-flex !important;
+					align-items: center !important;
+					justify-content: center !important;
 					width: 18px !important;
 					height: 18px !important;
 					color: rgba(var(--md-accent-color-secondary-rgb), 0.8) !important;
@@ -249,7 +279,7 @@ body.material-you-theme #page_pc_main_nav {
 			}
 
 			input.cmd-input {
-				padding-left: 2px !important;
+				padding-left: 6px !important;
 				color: rgba(var(--md-accent-color-secondary-rgb), 0.8) !important;
 				&::placeholder {
 					color: rgba(var(--md-accent-color-secondary-rgb), 0.35) !important;
@@ -257,16 +287,31 @@ body.material-you-theme #page_pc_main_nav {
 			}
 		}
 
-	// 3. 语音识别(mic)按钮: 增加全圆角
-	[class*="listening"] {
-		background: rgba(var(--md-accent-color-rgb), 0.06) !important;
-		background-image: none !important;
-		border-radius: 100px !important;
-		transition: background-color 0.2s ease;
-		&:hover {
-			background: rgba(var(--md-accent-color-rgb), 0.12) !important;
+		// 3. 语音识别(mic)按钮: 增加全圆角，消除 ::after 渐变描边与 border 虚影
+		[class*="listening"] {
+			background: rgba(var(--md-accent-color-rgb), 0.06) !important;
+			background-image: none !important;
+			border-radius: 100px !important;
+			border: none !important;
+			box-shadow: none !important;
+			outline: none !important;
+			transition: background-color 0.2s ease;
+			color: rgba(var(--md-accent-color-secondary-rgb), 0.8) !important;
+
+			&::before,
+			&::after {
+				display: none !important;
+			}
+
+			svg {
+				color: currentColor !important;
+				fill: currentColor !important;
+			}
+
+			&:hover {
+				background: rgba(var(--md-accent-color-rgb), 0.12) !important;
+			}
 		}
-	}
 
 	// 4. 用户胶囊
 	[class^="Bar_"]:not([class*="IconBar_"]):not([class*="SearchWrapper_"]) {
