@@ -818,12 +818,33 @@ const boot = () => {
 	updateGreeting();
 	setInterval(updateGreeting, 30000);
 
-			hookChannelMenus(); // 菜单染色(D8):尽早挂,晚于 applyScheme 以取到主色
-			setupCoverWatcher();
-			setupSongplayWatcher(); // Q1: 播放页挂载/更新守卫
-			setupHeaderIconsWatcher(); // 顶栏图标 Material Symbols 重绘
-			probeAndWatchAppThemeMode();
-		injectSettingsEntry();
+	hookChannelMenus(); // 菜单染色(D8):尽早挂,晚于 applyScheme 以取到主色
+	setupCoverWatcher();
+	setupSongplayWatcher(); // Q1: 播放页挂载/更新守卫
+	setupHeaderIconsWatcher(); // 顶栏图标 Material Symbols 重绘
+	probeAndWatchAppThemeMode();
+	injectSettingsEntry();
+
+	// 探针: 采集当前完整 DOM 树与播放条几何到日志
+	setTimeout(() => {
+		try {
+			const dump = [];
+			const walk = (el, d) => {
+				if (!el || d > 8 || dump.length > 500) return;
+				const r = el.getBoundingClientRect();
+				dump.push(`${'  '.repeat(d)}${el.tagName.toLowerCase()}.${String(el.className).slice(0, 50)} [${Math.round(r.x)},${Math.round(r.y)} ${Math.round(r.width)}x${Math.round(r.height)}]`);
+				for (const c of el.children) walk(c, d + 1);
+			};
+			walk(document.querySelector('#root') || document.body, 0);
+			if (typeof fetch !== 'undefined' && typeof BETTERNCM_API_PATH !== 'undefined') {
+				fetch(BETTERNCM_API_PATH + '/fs/write_file_text?path=md33recon-rootlayout.txt', {
+					method: 'POST',
+					headers: { 'BETTERNCM_API_KEY': BETTERNCM_API_KEY, 'Content-Type': 'text/plain' },
+					body: dump.join('\n')
+				}).catch(() => {});
+			}
+		} catch (e) {}
+	}, 3000);
 };
 
 if (document.readyState === 'loading') {
