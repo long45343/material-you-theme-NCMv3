@@ -629,18 +629,24 @@ const probeAndWatchAppThemeMode = () => {
 	update();
 };
 
-// ---------------------------------------------------------------- 设置入口(D7:侧栏头像旁)
+// ---------------------------------------------------------------- 设置入口与顶栏功能图标统合容器 (Q5 实施)
 const injectSettingsEntry = () => {
 	waitForElement('#page_pc_main_nav', (nav) => {
-		// 关键路径(A1):容器创建与按钮初始化调度必须最先执行;
-		// 装饰性逻辑(重挂守卫/皮肤隐藏)失败只允许影响外观,不得阻断按钮出现。
+		// 创建统合排布容器 #md-custom-icon-bar (排布 ✉, ⚙, 🎵, 🎨)
+		const customBar = document.createElement('div');
+		customBar.id = 'md-custom-icon-bar';
+		customBar.className = 'md-custom-icon-bar';
+
 		const container = document.createElement('div');
 		container.id = 'md-settings-menu-container';
 		container.className = 'md-settings-menu-container';
 		container.addEventListener('dblclick', (e) => e.stopPropagation());
 		container.addEventListener('mousedown', (e) => e.stopPropagation());
 
-		// React/ReactDOM 由客户端 vendor 挂载,需等待就绪(initSettingMenu 内部有容器缺失重试,可容忍时序差)
+		// 调色盘加入统合容器末尾
+		customBar.appendChild(container);
+
+		// React/ReactDOM 由客户端 vendor 挂载,需等待就绪
 		const waitReactDOM = setInterval(() => {
 			if (window.ReactDOM && window.React) {
 				clearInterval(waitReactDOM);
@@ -649,38 +655,61 @@ const injectSettingsEntry = () => {
 		}, 200);
 
 		try {
-			// 锚点: 原生徽章行末尾 (纯 CSS 排布，严禁 JS appendChild 搬移 React 节点导致崩溃)
-			const getAnchor = () => nav.querySelector('[class*="MiniModeIconBar_"]')?.parentElement
-				?? nav.querySelector('img.cmd-image')?.closest('[class*="Bar_"]')?.parentElement
-				?? nav;
+			// 锚点: 原生 IconBar_i1ueu1yn 内部的窗口控制或分隔线之前
+			const getAnchor = () => nav.querySelector('[class*="IconBar_"]') ?? nav;
 
 			const reattach = () => {
 				const anchor = getAnchor();
-				const divider = anchor.querySelector('[class*="Divider_"]') || anchor.querySelector('[class*="WindowOpBarContainer_"]');
-				if (container.parentElement !== anchor || (divider && container.nextElementSibling !== divider && divider.parentElement === anchor)) {
-					anchor.insertBefore(container, divider && divider.parentElement === anchor ? divider : null);
+				const winBar = anchor.querySelector('[class*="WindowOpBarContainer_"]');
+				const divider = anchor.querySelector('[class*="Divider_"]') || winBar;
+
+				if (customBar.parentElement !== anchor || (divider && customBar.nextElementSibling !== divider && divider.parentElement === anchor)) {
+					anchor.insertBefore(customBar, divider && divider.parentElement === anchor ? divider : null);
+				}
+
+				// 将原生 ✉、⚙、🎵 挂载进 customBar
+				const msgBtn = nav.querySelector('[data-testid="tid_header_msg_btn"]')?.closest('[class*="BadgeWrapper"]')
+					|| nav.querySelector('.cmd-icon-message')?.closest('[class*="BadgeWrapper"]')
+					|| nav.querySelector('[data-testid="tid_header_msg_btn"]');
+
+				const settingBtn = nav.querySelector('[data-testid="tid_header_setting_btn"]')?.closest('[class*="BadgeWrapper"]')
+					|| nav.querySelector('.cmd-icon-setting:not([title="BetterNCM"])')?.closest('[class*="BadgeWrapper"]')
+					|| nav.querySelector('[data-testid="tid_header_setting_btn"]');
+
+				const bncmBtn = document.querySelector('[title="BetterNCM"]');
+
+				// 顺序依次为: ✉ -> ⚙ -> 🎵 -> 🎨 (container)
+				if (msgBtn && msgBtn.parentElement !== customBar) {
+					customBar.insertBefore(msgBtn, customBar.firstChild);
+				}
+				if (settingBtn && settingBtn.parentElement !== customBar) {
+					// 插入在 msgBtn 之后，或 container 之前
+					customBar.insertBefore(settingBtn, container);
+				}
+				if (bncmBtn && bncmBtn.parentElement !== customBar) {
+					// 插入在 settingBtn 之后，container 之前
+					customBar.insertBefore(bncmBtn, container);
 				}
 			};
+
 			reattach();
 			new MutationObserver(reattach).observe(nav, { childList: true, subtree: true });
 
-			// 隐藏网易云皮肤切换入口(主题启用时与主题冲突;连同未读红点)
-				const hideSkinEntry = () => {
-					const icon = nav.querySelector('.cmd-icon-skin');
-					if (!icon) return;
+			// 隐藏网易云皮肤切换入口与 mini 模式按钮
+			const hideEntries = () => {
+				const icon = nav.querySelector('.cmd-icon-skin');
+				if (icon) {
 					const btn = icon.closest('[class*="BadgeWrapper"]') ?? icon.closest('.cmd-badge') ?? icon.closest('button') ?? icon;
 					btn.style.display = 'none';
-				};
-				hideSkinEntry();
-				new MutationObserver(hideSkinEntry).observe(nav, { childList: true, subtree: true });
-			} catch (e) {
-				console.error('MD3 nav decorations', e);
-			}
-
-			// BNCM 入口归位在第二轮以纯 CSS 实现(docs/FIX-CHECKLIST.md 工作项 D):
-			// 严禁 JS 搬移/插入 React 管理的节点(96b51cc 前车之鉴:协调冲突 → 首启崩溃)
-		});
-	};
+				}
+			};
+			hideEntries();
+			new MutationObserver(hideEntries).observe(nav, { childList: true, subtree: true });
+		} catch (e) {
+			console.error('MD3 nav decorations', e);
+		}
+	});
+};
 
 			// ---------------------------------------------------------------- 顶栏图标重绘 (全部统一定制 Material Symbols，加粗 20%)
 			const CUSTOM_NAV_SVGS = {
@@ -762,11 +791,6 @@ const injectSettingsEntry = () => {
 			applyIcons();
 			new MutationObserver(applyIcons).observe(document.body, { childList: true, subtree: true });
 		};
-		};
-
-		applyIcons();
-		new MutationObserver(applyIcons).observe(document.body, { childList: true, subtree: true });
-	};
 
 // ---------------------------------------------------------------- 问候语(保留,样式层可选消费)
 const updateGreeting = () => {

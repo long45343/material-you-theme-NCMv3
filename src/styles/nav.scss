@@ -81,15 +81,20 @@ body.material-you-theme #page_pc_main_nav [title="BetterNCM"] {
 }
 
 // 顶栏图标外层容器与排布重构:
-// 严禁 JS appendChild 搬移 React 节点 (前车之鉴: React 协调冲突 -> 致命卡死/崩溃)
-// 纯 CSS 解决间隙与对齐:
 // 1. 统一所有图标视口为 20×20
-// 2. 将 MiniModeIconBar 设置为 inline-flex 并解除固定宽度与 space-between，采用单一 gap: 12px
-// 3. 将调色盘紧随其后作为兄弟项，前边距对齐为 12px
-// 4. 彻底隐藏删除 mini 模式按钮与相关占位逻辑
-// 5. 分隔线 | 两侧保留 14px 呼吸间距
-// 6. 右侧窗口控制 (🗕 - 12px - 🗖/还原 - 12px - ✕)
+// 2. 彻底弃用/隐藏原 MiniModeIconBar_ 冗余空隙
+// 3. 新建 #md-custom-icon-bar 独立容器统合排布四个图标 (✉ - ⚙ - 🎵 - 🎨)，间隙严格均等 (gap: 14px)
+// 4. 分隔线 | 两侧保留 14px 呼吸间距
+// 5. 右侧窗口控制 (🗕 - 12px - 🗖/还原 - 12px - ✕)
+// 6. 用户胶囊 (.Bar_b2jgnke) 向左移动约 50px
 body.material-you-theme #page_pc_main_nav {
+	// 用户胶囊向左移动约 50px (用户指定需求5)
+	.Bar_b2jgnke,
+	[class*="Bar_b2jgnke"],
+	[class^="Bar_"]:not([class*="IconBar_"]):not([class*="SearchWrapper_"]) {
+		transform: translateX(-50px) !important;
+	}
+
 	// 尺寸统一
 	.cmd-icon,
 	.md-settings-menu-container,
@@ -104,9 +109,44 @@ body.material-you-theme #page_pc_main_nav {
 		}
 	}
 
-	// 调色盘与前项音符间距对齐为严格的 12px
-	.md-settings-menu-container {
-		margin: 0 0 0 12px !important;
+	// 新建独立统合容器：严格均等排布四个图标 (✉ ⚙ 🎵 🎨)
+	#md-custom-icon-bar,
+	.md-custom-icon-bar {
+		display: inline-flex !important;
+		align-items: center !important;
+		gap: 14px !important;
+		margin: 0 !important;
+		padding: 0 !important;
+		height: 20px !important;
+
+		> * {
+			margin: 0 !important;
+			padding: 0 !important;
+			width: 20px !important;
+			height: 20px !important;
+			display: inline-flex !important;
+			align-items: center !important;
+			justify-content: center !important;
+		}
+
+		div[class*="BadgeWrapper_"] {
+			display: inline-flex !important;
+			align-items: center !important;
+			justify-content: center !important;
+			width: 20px !important;
+			height: 20px !important;
+			margin: 0 !important;
+			padding: 0 !important;
+			gap: 0 !important;
+		}
+
+		[title="BetterNCM"] {
+			display: inline-flex !important;
+			align-items: center !important;
+			justify-content: center !important;
+			position: static !important;
+			margin: 0 !important;
+		}
 	}
 
 	[class*="IconBar_"] {
@@ -116,23 +156,9 @@ body.material-you-theme #page_pc_main_nav {
 		justify-content: flex-end !important;
 	}
 
-	// 原生 MiniModeIconBar_: 设为紧凑 inline-flex，解除 space-between 与多余宽度，间隙统一为 12px (Q3 决策实施)
-	// 彻底清除 BadgeWrapper 与右侧的重复外边距叠加，精准对齐 12px 间隙
+	// 彻底弃用/清空原生 MiniModeIconBar_
 	[class*="MiniModeIconBar_"] {
-		width: auto !important;
-		flex-shrink: 0 !important;
-		display: inline-flex !important;
-		align-items: center !important;
-		justify-content: flex-start !important;
-		margin: 0 !important;
-		padding: 0 !important;
-
-		> [class*="BadgeWrapper_"] {
-			margin-right: 0 !important;
-		}
-		> *:not(:last-child) {
-			margin-right: 0 !important;
-		}
+		display: none !important;
 	}
 
 	// 彻底删除/隐藏 mini 模式按钮与相关占位逻辑
