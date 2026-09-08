@@ -1,6 +1,6 @@
 # Material You Theme (NCM v3)
 
-BetterNCM/chromatic 主题插件 —— 为网易云音乐 **3.x** PC 客户端带来 Material You 风格的主题。
+BetterNCM/chromatic 主题插件 —— 为网易云音乐 **3.x** PC 客户端带来 Material You 风格的主题，采用Zcode+GLM5.3Flash/Gemini 3.8 Flash辅助开发。
 
 - 基于 [solstice23/material-you-theme-netease](https://github.com/solstice23/material-you-theme-netease)(GPL-3.0)开发,针对 3.x 全新前端重写。
 - 换肤原理:3.x 客户端将全部颜色挂在 `html` 元素的全局令牌(`--colorPrimary*` / `--colorBackground` / `--colorSidebar*` 等)上,本插件用 Material You 引擎生成的配色整体重定义这些令牌。
@@ -8,6 +8,7 @@ BetterNCM/chromatic 主题插件 —— 为网易云音乐 **3.x** PC 客户端�
 
 ## 预览
 <img width="1919" height="1028" alt="屏幕截图 2026-09-08 121124" src="https://github.com/user-attachments/assets/15a4a750-b269-4f7f-a81a-a06c98acc0d6" />
+（此处采用固定色主题）
 <img width="1919" height="1029" alt="屏幕截图 2026-09-08 121232" src="https://github.com/user-attachments/assets/a6d532d9-dfde-425d-9a2f-8be17256b835" />
 <img width="1917" height="1030" alt="屏幕截图 2026-09-08 121243" src="https://github.com/user-attachments/assets/143088a1-27e2-45e7-81c3-a3a20eef8cc8" />
 <img width="607" height="889" alt="屏幕截图 2026-09-08 121444" src="https://github.com/user-attachments/assets/7b8ffaad-c7fa-4f3b-9368-173d54744937" />
