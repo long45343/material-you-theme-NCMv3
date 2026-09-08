@@ -469,12 +469,47 @@ const refreshThemeWithCurrentMode = () => {
 	}
 };
 
-const initSettings = () => {
-	applyScheme(getSetting('scheme', 'dynamic-default-auto'));
-	addOrRemoveGlobalClassByOption('ignore-now-playing', getSetting('ignore-now-playing-page', false));
-	addOrRemoveGlobalClassByOption('md-disable-comment-style', getSetting('disable-comment-style', false));
-	addOrRemoveGlobalClassByOption('hide-ncm-logo', getSetting('hide-ncm-logo', false));
-}
+	// 优先异步尝试从 BETTERNCM_PROFILE/material-you-theme-cache.json 读取上次缓存的主题色
+	// 注意：该逻辑仅应在动态取色状态下生效；如果用户采用静态配色，则无视该逻辑。
+	const tryLoadThemeCache = async () => {
+		const currentScheme = getSetting('scheme', 'dynamic-default-auto');
+		if (!currentScheme.startsWith('dynamic-')) {
+			// 静态配色无视缓存文件
+			return false;
+		}
+		if (typeof fetch === 'undefined' || typeof BETTERNCM_API_PATH === 'undefined') return false;
+		try {
+			const res = await fetch(BETTERNCM_API_PATH + '/fs/read_file_text?path=' + encodeURIComponent('material-you-theme-cache.json'), {
+				headers: { 'BETTERNCM_API_KEY': BETTERNCM_API_KEY }
+			});
+			if (!res.ok) return false;
+			const text = await res.text();
+			if (!text) return false;
+			const data = JSON.parse(text);
+			if (data && typeof data.color === 'number' && Number.isFinite(data.color)) {
+				// 成功读取到文件中的主题色
+				window.mdCoverDominantColor = data.color;
+				refreshTheme();
+				return true;
+			}
+		} catch (e) {
+			// 读取异常直接静默走常规兜底
+		}
+		return false;
+	};
+
+	const initSettings = () => {
+		const savedScheme = getSetting('scheme', 'dynamic-default-auto');
+		applyScheme(savedScheme);
+		addOrRemoveGlobalClassByOption('ignore-now-playing', getSetting('ignore-now-playing-page', false));
+		addOrRemoveGlobalClassByOption('md-disable-comment-style', getSetting('disable-comment-style', false));
+		addOrRemoveGlobalClassByOption('hide-ncm-logo', getSetting('hide-ncm-logo', false));
+
+		// 动态模式下优先读取磁盘缓存色
+		if (savedScheme.startsWith('dynamic-')) {
+			tryLoadThemeCache();
+		}
+	}
 
 // ---------------------------------------------------------------- 取色源(3.1 多候选链)
 const COVER_CANDIDATES = [
@@ -499,6 +534,45 @@ const getCoverElement = () => {
 	return null;
 };
 
+// ---------------------------------------------------------------- 主题色磁盘持久化 (仅动态取色生效)
+// 写入 BETTERNCM_PROFILE/material-you-theme-cache.json
+let lastSavedColor = null;
+let saveColorTimer = null;
+const saveThemeCacheToFile = (force = false) => {
+	// 仅在动态取色模式下生效；若用户采用静态配色，则完全无视该逻辑
+	if (!window.mdScheme || !window.mdScheme.startsWith('dynamic-')) return;
+	const color = window.mdCoverDominantColor;
+	if (!color || typeof color !== 'number') return;
+	if (!force && color === lastSavedColor) return;
+
+	const doWrite = () => {
+		lastSavedColor = color;
+		if (typeof fetch !== 'undefined' && typeof BETTERNCM_API_PATH !== 'undefined') {
+			const payload = JSON.stringify({
+				color: color,
+				scheme: window.mdScheme,
+				time: Date.now()
+			});
+			fetch(BETTERNCM_API_PATH + '/fs/write_file_text?path=' + encodeURIComponent('material-you-theme-cache.json'), {
+				method: 'POST',
+				headers: { 'BETTERNCM_API_KEY': BETTERNCM_API_KEY, 'Content-Type': 'text/plain' },
+				body: payload
+			}).catch(() => {});
+		}
+	};
+
+	if (force) {
+		doWrite();
+	} else {
+		clearTimeout(saveColorTimer);
+		saveColorTimer = setTimeout(doWrite, 1000); // 1s 防抖，避开热路径
+	}
+};
+
+// 页面隐藏/卸载/关闭时立即强制落盘一次
+window.addEventListener('pagehide', () => saveThemeCacheToFile(true));
+window.addEventListener('beforeunload', () => saveThemeCacheToFile(true));
+
 const updateDynamicColorFromCover = (img) => {
 	const canvas = document.createElement('canvas');
 	canvas.width = 48;
@@ -513,11 +587,12 @@ const updateDynamicColorFromCover = (img) => {
 	const ranked = Score.score(quantizedColors);
 	const top = ranked[0];
 
-		window.mdCoverDominantColor = top;
-		document.body.dispatchEvent(new CustomEvent('md-dominant-color-change'));
+	window.mdCoverDominantColor = top;
+	document.body.dispatchEvent(new CustomEvent('md-dominant-color-change'));
 
-		refreshTheme();
-	}
+	refreshTheme();
+	saveThemeCacheToFile(); // 动态取色成功后防抖落盘
+}
 
 	// Q3 实施: 补全 3.1 播放页内置模糊背景取色逻辑 (闭环 D6 决策)
 	const BG_CANDIDATES = [
