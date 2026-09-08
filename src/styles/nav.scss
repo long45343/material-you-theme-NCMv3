@@ -88,11 +88,11 @@ body.material-you-theme #page_pc_main_nav [title="BetterNCM"] {
 // 5. 右侧窗口控制 (🗕 - 12px - 🗖/还原 - 12px - ✕)
 // 6. 用户胶囊 (.Bar_b2jgnke) 向左移动约 50px
 body.material-you-theme #page_pc_main_nav {
-	// 用户胶囊向左移动约 50px (用户指定需求5)
+	// 用户胶囊偏移调整: 从左移50px往右微调20px (净左移30px)
 	.Bar_b2jgnke,
 	[class*="Bar_b2jgnke"],
 	[class^="Bar_"]:not([class*="IconBar_"]):not([class*="SearchWrapper_"]) {
-		transform: translateX(-50px) !important;
+		transform: translateX(-30px) !important;
 	}
 
 	// 尺寸统一
