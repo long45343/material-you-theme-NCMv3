@@ -88,11 +88,18 @@ body.material-you-theme #page_pc_main_nav [title="BetterNCM"] {
 // 5. 右侧窗口控制 (🗕 - 12px - 🗖/还原 - 12px - ✕)
 // 6. 用户胶囊 (.Bar_b2jgnke) 向左移动约 50px
 body.material-you-theme #page_pc_main_nav {
-	// 用户胶囊偏移调整: 从左移30px再向右微调10px (净左移20px，消除窄窗下与语音键碰撞)
+	// 用户胶囊自适应网格防碰撞重构:
+	// 彻底清除静态 transform: translateX，改用 Grid/Flex 盒模型的 margin 约束；
+	// 1. 声明 margin-left: 16px !important，保障窄窗下绝不侵入左侧麦克风胶囊；
+	// 2. 声明 margin-right: 24px !important，与右侧功能图标保持舒适呼吸留白；
+	// 3. justify-self: end 保证宽屏时贴近右侧，窄屏时在安全边距内弹性停靠。
 	.Bar_b2jgnke,
 	[class*="Bar_b2jgnke"],
 	[class^="Bar_"]:not([class*="IconBar_"]):not([class*="SearchWrapper_"]) {
-		transform: translateX(-20px) !important;
+		transform: none !important;
+		margin-left: 16px !important;
+		margin-right: 24px !important;
+		justify-self: end !important;
 	}
 
 	// 尺寸统一
