@@ -1,16 +1,131 @@
-// player.scss — 播放条(footer > #page_pc_mini_bar)
-// MD3:表面色 + 顶部圆角 + 上投影,与页面背景分层。
-
+// player.scss — 播放条与 MD3 桌面端直轨滑块规范重构
+// 1. 表面色 + 顶部圆角 + 上投影，与页面背景分层
 body.material-you-theme footer {
 	background: var(--colorBackgroundWhite) !important;
 	border-radius: 16px 16px 0 0;
 	box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.10);
 }
 
-// 进度条 hover 时间气泡跟随主题 (Q1 决策实施)
-// 1. 严格限制仅在 hover 或 dragging 状态下呈现，平静态绝对隐藏，根除常驻左下角遮挡
-// 2. 补齐高对比度白色文字，消除深红底深灰字
+// 2. MD3 桌面端直轨滑块规范实装
 body.material-you-theme {
+	// 进度条整体位置微抬 2px，消除贴底偏下感；触控热区保持 24px
+	[class*="StyledSliderContainer_"],
+	.slider-default,
+	.slider-vinyl {
+		position: relative !important;
+		top: -2px !important;
+		margin-bottom: -2px !important;
+		cursor: pointer !important;
+
+		// 动效规范: 150ms cubic-bezier(0.2, 0, 0, 1) 标准缓动
+		&,
+		&::before,
+		.cache,
+		.track,
+		.thumb {
+			transition: height 150ms cubic-bezier(0.2, 0, 0, 1),
+			            width 150ms cubic-bezier(0.2, 0, 0, 1),
+			            top 150ms cubic-bezier(0.2, 0, 0, 1),
+			            box-shadow 150ms cubic-bezier(0.2, 0, 0, 1) !important;
+		}
+
+		// 静止/播放默认态: 轨道高度 4px，全圆角 9999px
+		&:not(:hover):not(.dragging) {
+			height: 4px !important;
+			top: -2px !important;
+
+			&::before,
+			.cache,
+			.track {
+				height: 4px !important;
+				border-radius: 9999px !important;
+			}
+
+			// 静止降噪: 滑块收起隐藏，界面极致纯净
+			.thumb {
+				display: none !important;
+				width: 0 !important;
+				height: 0 !important;
+			}
+		}
+
+		// 底轨 (Inactive Track): 表面底色
+		&::before {
+			height: 100% !important;
+			background: var(--colorSidebar5) !important;
+			border-radius: 9999px !important;
+		}
+
+		// 缓存轨 (Buffer Track): 次级强调色淡染
+		.cache {
+			height: 100% !important;
+			background: rgba(var(--md-accent-color-rgb), 0.25) !important;
+			border-radius: 9999px !important;
+		}
+
+		// 已播轨 (Active Track): 主题主色
+		.track {
+			height: 100% !important;
+			background: var(--colorPrimary1) !important;
+			border-radius: 9999px !important;
+			opacity: 1 !important;
+		}
+
+		// 悬停态 (Hover): 轨道膨胀至 6px
+		&:hover {
+			height: 6px !important;
+
+			&::before,
+			.cache,
+			.track {
+				height: 6px !important;
+				border-radius: 9999px !important;
+			}
+
+			// 滑块弹出: 16px 圆形，居中对齐
+			.thumb:not(.loading) {
+				display: block !important;
+				width: 16px !important;
+				height: 16px !important;
+				top: 3px !important;
+				background: var(--colorPrimary1) !important;
+				// 彻底消除原生 30px 白光过重阴影，改用 8px 柔和状态光晕 (State Layer)
+				box-shadow: 0 0 0 8px rgba(var(--md-accent-color-rgb), 0.12) !important;
+			}
+		}
+
+		// 拖拽激活态 (Dragging / Active)
+		&.dragging {
+			height: 6px !important;
+
+			&::before,
+			.cache,
+			.track {
+				height: 6px !important;
+				border-radius: 9999px !important;
+			}
+
+			// 滑块放大至 20px，光晕扩大至 10px，叠加环境漫反射投影
+			.thumb {
+				display: block !important;
+				width: 20px !important;
+				height: 20px !important;
+				top: 3px !important;
+				background: var(--colorPrimary1) !important;
+				box-shadow: 0 0 0 10px rgba(var(--md-accent-color-rgb), 0.16),
+				            0 2px 6px rgba(0, 0, 0, 0.15) !important;
+			}
+		}
+
+		// 原生黑胶模式滑块适配
+		&.slider-vinyl {
+			&::before {
+				display: block !important;
+			}
+		}
+	}
+
+	// 3. 悬停时间提示气泡: 反色表面 + 纯白反色文字，平时绝对隐藏
 	[class*="StyledSliderContainer_"]:not(:hover):not(.dragging) .curtime-thumb,
 	.slider-default:not(:hover):not(.dragging) .curtime-thumb,
 	.slider-vinyl:not(:hover):not(.dragging) .curtime-thumb {
@@ -18,9 +133,14 @@ body.material-you-theme {
 	}
 
 	.curtime-thumb .cmd-button {
-		background: var(--colorPrimary1) !important;
+		background: #1e1e22 !important;
 		color: #ffffff !important;
 		border: none !important;
-		box-shadow: var(--md-elev-1) !important;
+		border-radius: 100px !important;
+		padding: 4px 12px !important;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.20) !important;
+		font-family: inherit !important;
+		font-size: 12px !important;
+		font-weight: 500 !important;
 	}
 }
