@@ -10,7 +10,7 @@ module.exports = {
     new copyWebpackPlugin({
       patterns: [
         { from: path.resolve(__dirname, "src", "manifest.json"), to: path.resolve(__dirname, "dist", "manifest.json") },
-        { from: path.resolve(__dirname, "src", "preview.gif"), to: path.resolve(__dirname, "dist", "preview.gif") },
+        { from: path.resolve(__dirname, "src", "Preview.jpg"), to: path.resolve(__dirname, "dist", "Preview.jpg") },
       ],
     }),
   ],

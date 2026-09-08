@@ -21,7 +21,7 @@ BetterNCM/chromatic 主题插件 —— 为网易云音乐 **3.x** PC 客户端�
 ## 手动编译与安装
 
 1. 安装 [BetterNCM](https://microblock.cc/betterncm)
-2. 将 `dist` 打包为 `MaterialYouThemeNCMv3.plugin`(zip 格式)放入 BetterNCM 数据目录的 `plugins/` 文件夹,重启客户端
+2. 将 `dist` 打包为 `material-u-theme-ncmv3.plugin`(zip 格式)放入 BetterNCM 数据目录的 `plugins/` 文件夹,重启客户端
 
 ## 构建
 
