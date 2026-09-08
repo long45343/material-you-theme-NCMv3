@@ -168,4 +168,15 @@ body.material-you-theme {
 		font-size: 12px !important;
 		font-weight: 500 !important;
 	}
+
+	// 4. 彻底销毁网易云原生悬停时向主页面投射的 200px 巨大暗化渐变遮罩 (根治突兀脏阴影)
+	.MinibarHoverMask_mvfuu0n,
+	[class*="MinibarHoverMask_"] {
+		display: none !important;
+		opacity: 0 !important;
+		height: 0 !important;
+		width: 0 !important;
+		pointer-events: none !important;
+		visibility: hidden !important;
+	}
 }
