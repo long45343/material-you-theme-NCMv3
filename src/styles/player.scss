@@ -4,18 +4,25 @@ body.material-you-theme footer {
 	background: var(--colorBackgroundWhite) !important;
 	border-radius: 16px 16px 0 0;
 	box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.10);
+	position: relative !important;
+	padding-top: 0 !important;
 }
 
 // 2. MD3 桌面端直轨滑块规范实装
 body.material-you-theme {
-	// 进度条整体位置微抬 2px，消除贴底偏下感；触控热区保持 24px
+	// 进度条定位重构: 绝对定位于 footer 与主页之间的顶切线上，彻底消除内嵌 7px 白顶错位
 	[class*="StyledSliderContainer_"],
 	.slider-default,
 	.slider-vinyl {
-		position: relative !important;
-		top: -2px !important;
-		margin-bottom: -2px !important;
+		position: absolute !important;
+		top: 0 !important;
+		left: 0 !important;
+		right: 0 !important;
+		width: 100% !important;
+		margin: 0 !important;
+		padding: 0 !important;
 		cursor: pointer !important;
+		z-index: 10 !important;
 
 		// 动效规范: 150ms cubic-bezier(0.2, 0, 0, 1) 标准缓动
 		&,
@@ -26,16 +33,15 @@ body.material-you-theme {
 			transition: height 150ms cubic-bezier(0.2, 0, 0, 1),
 			            width 150ms cubic-bezier(0.2, 0, 0, 1),
 			            top 150ms cubic-bezier(0.2, 0, 0, 1),
-			            box-shadow 150ms cubic-bezier(0.2, 0, 0, 1) !important;
+			            transform 150ms cubic-bezier(0.2, 0, 0, 1) !important;
 		}
 
-		// 静止/播放默认态: 轨道高度 4px，全圆角 9999px
+		// 静止/播放默认态: 轨道高度 4px，全圆角 9999px，正贴于 footer 顶边缘
 		&:not(:hover):not(.dragging) {
 			height: 4px !important;
 			top: -2px !important;
 
 			&::before,
-			.cache,
 			.track {
 				height: 4px !important;
 				border-radius: 9999px !important;
@@ -49,18 +55,17 @@ body.material-you-theme {
 			}
 		}
 
-		// 底轨 (Inactive Track): 表面底色
+		// 底轨 (Inactive Track): 按照用户指示彻底改成纯净背景色，拉开与主题色轨道的色阶
 		&::before {
 			height: 100% !important;
-			background: var(--colorSidebar5) !important;
+			background: var(--colorBackground) !important;
 			border-radius: 9999px !important;
+			opacity: 1 !important;
 		}
 
-		// 缓存轨 (Buffer Track): 次级强调色淡染
+		// 缓存轨 (Buffer Track): 彻底隐藏，消除多余灰度污染底轨
 		.cache {
-			height: 100% !important;
-			background: rgba(var(--md-accent-color-rgb), 0.25) !important;
-			border-radius: 9999px !important;
+			display: none !important;
 		}
 
 		// 已播轨 (Active Track): 主题主色
@@ -71,49 +76,52 @@ body.material-you-theme {
 			opacity: 1 !important;
 		}
 
-		// 悬停态 (Hover): 轨道膨胀至 6px
+		// 悬停态 (Hover): 轨道膨胀至 6px，向上平分 3px 跨界主页与底栏
 		&:hover {
 			height: 6px !important;
+			top: -3px !important;
 
 			&::before,
-			.cache,
 			.track {
 				height: 6px !important;
 				border-radius: 9999px !important;
 			}
 
-			// 滑块弹出: 16px 圆形，居中对齐
+			// 滑块弹出: 16px 圆形，几何中心与轨道严格对齐 (top: 50% + translate(-50%, -50%))
+			// 彻底清除突兀的大阴影与高斯白光，保持边缘纯净利落
 			.thumb:not(.loading) {
 				display: block !important;
 				width: 16px !important;
 				height: 16px !important;
-				top: 3px !important;
+				top: 50% !important;
+				transform: translate(-50%, -50%) !important;
 				background: var(--colorPrimary1) !important;
-				// 彻底消除原生 30px 白光过重阴影，改用 8px 柔和状态光晕 (State Layer)
-				box-shadow: 0 0 0 8px rgba(var(--md-accent-color-rgb), 0.12) !important;
+				border: none !important;
+				box-shadow: 0 1px 3px rgba(0, 0, 0, 0.20) !important;
 			}
 		}
 
 		// 拖拽激活态 (Dragging / Active)
 		&.dragging {
 			height: 6px !important;
+			top: -3px !important;
 
 			&::before,
-			.cache,
 			.track {
 				height: 6px !important;
 				border-radius: 9999px !important;
 			}
 
-			// 滑块放大至 20px，光晕扩大至 10px，叠加环境漫反射投影
+			// 滑块放大至 20px，中心依然严格对准轨道中轴线
 			.thumb {
 				display: block !important;
 				width: 20px !important;
 				height: 20px !important;
-				top: 3px !important;
+				top: 50% !important;
+				transform: translate(-50%, -50%) !important;
 				background: var(--colorPrimary1) !important;
-				box-shadow: 0 0 0 10px rgba(var(--md-accent-color-rgb), 0.16),
-				            0 2px 6px rgba(0, 0, 0, 0.15) !important;
+				border: none !important;
+				box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25) !important;
 			}
 		}
 
