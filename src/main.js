@@ -62,20 +62,21 @@ document.head.appendChild(tokenStyleController);
 const dynamicColorController = document.createElement('style');
 document.head.appendChild(dynamicColorController);
 
+// 默认动态兜底颜色：纯净中性灰色 (RGB 128, 128, 128)，杜绝生硬紫粉色
 const defaultDynamicColor = {
-	'--md-dynamic-light-primary': 'rgb(103, 80, 164)',
-	'--md-dynamic-light-primary-rgb': '103, 80, 164',
-	'--md-dynamic-light-secondary': 'rgb(98, 91, 113)',
-	'--md-dynamic-light-secondary-rgb': '98, 91, 113',
+	'--md-dynamic-light-primary': 'rgb(128, 128, 128)',
+	'--md-dynamic-light-primary-rgb': '128, 128, 128',
+	'--md-dynamic-light-secondary': 'rgb(100, 100, 100)',
+	'--md-dynamic-light-secondary-rgb': '100, 100, 100',
 	'--md-dynamic-light-bg': 'rgb(244, 239, 244)',
 	'--md-dynamic-light-bg-rgb': '244, 239, 244',
 	'--md-dynamic-light-bg-darken': 'rgb(251, 246, 251)',
 	'--md-dynamic-light-bg-darken-rgb': '251, 246, 251',
 
-	'--md-dynamic-dark-primary': 'rgb(208, 188, 255)',
-	'--md-dynamic-dark-primary-rgb': '208, 188, 255',
-	'--md-dynamic-dark-secondary': 'rgb(204, 194, 220)',
-	'--md-dynamic-dark-secondary-rgb': '204, 194, 220',
+	'--md-dynamic-dark-primary': 'rgb(180, 180, 180)',
+	'--md-dynamic-dark-primary-rgb': '180, 180, 180',
+	'--md-dynamic-dark-secondary': 'rgb(160, 160, 160)',
+	'--md-dynamic-dark-secondary-rgb': '160, 160, 160',
 	'--md-dynamic-dark-bg': 'rgb(49, 48, 51)',
 	'--md-dynamic-dark-bg-rgb': '49, 48, 51',
 	'--md-dynamic-dark-bg-darken': 'rgb(38, 37, 40)',
