@@ -220,29 +220,35 @@ body.material-you-theme #page_pc_main_nav {
 #page_pc_main_nav {
 	// ---- 第三轮:搜索框 + 返回键 + 语音键 + 用户胶囊 ----
 	// 1. 历史前进/后退键: 增加全圆角 pill 规约
-		// 1. 历史前进/后退键: 增加全圆角 pill 规约，彻底消除外层方形边框
-		[class*="HistoryIconBackground_"] {
-			border-radius: 100px !important;
-			border: none !important;
-			box-shadow: none !important;
-			outline: none !important;
-			background: rgba(var(--md-accent-color-rgb), 0.04) !important;
-			display: flex !important;
-			align-items: center !important;
-			justify-content: center !important;
-			transition: background-color 0.2s ease;
-			color: rgba(var(--md-accent-color-secondary-rgb), 0.8) !important;
+		// 1. 历史前进/后退键: 约束为 32x32 等比正圆，消除 3.1.27 宽高不一致导致的瘦长椭圆畸变
+			[class*="HistoryIconBackground_"] {
+				width: 32px !important;
+				height: 32px !important;
+				border-radius: 50% !important;
+				border: none !important;
+				box-shadow: none !important;
+				outline: none !important;
+				background: rgba(var(--md-accent-color-rgb), 0.04) !important;
+				display: flex !important;
+				align-items: center !important;
+				justify-content: center !important;
+				flex-shrink: 0 !important;
+				transition: background-color 0.2s ease;
+				color: rgba(var(--md-accent-color-secondary-rgb), 0.8) !important;
 
-			.arr,
-			svg {
-				color: currentColor !important;
-				fill: currentColor !important;
-			}
+				.arr,
+				.cmd-icon,
+				svg {
+					color: currentColor !important;
+					fill: currentColor !important;
+					width: 18px !important;
+					height: 18px !important;
+				}
 
-			&:hover:not(.disable) {
-				background: rgba(var(--md-accent-color-rgb), 0.1) !important;
+				&:hover:not(.disable) {
+					background: rgba(var(--md-accent-color-rgb), 0.1) !important;
+				}
 			}
-		}
 
 		// 2. 搜索框 (消除外层矩形虚影，精准放行放大镜图标，彻底消灭 ::after 渐变伪元素边框)
 		[class*="SearchWrapper_"],
@@ -361,13 +367,91 @@ body.material-you-theme #page_pc_main_nav {
 			}
 		}
 
-	// 4. 用户胶囊
-	[class^="Bar_"]:not([class*="IconBar_"]):not([class*="SearchWrapper_"]) {
-		background: rgba(var(--md-accent-color-rgb), 0.06) !important;
-		border-radius: 100px !important;
-		transition: background-color 0.25s ease;
-		&:hover {
-			background: rgba(var(--md-accent-color-rgb), 0.12) !important;
+		// 4. 用户胶囊 (MD3 舒展药丸规范，严格左右等距对称)
+		[class^="Bar_"]:not([class*="IconBar_"]):not([class*="SearchWrapper_"]) {
+			display: inline-flex !important;
+			align-items: center !important;
+			justify-content: center !important;
+			width: auto !important;
+			height: 36px !important;
+			box-sizing: border-box !important;
+			// 左右两端完全等距对称留白 (左右各 10px)
+			padding: 0 10px !important;
+			// 元素间隙均匀拉开为 8px
+			gap: 8px !important;
+			background: rgba(var(--md-accent-color-rgb), 0.06) !important;
+			border-radius: 999px !important;
+			cursor: pointer !important;
+			transition: background-color 0.25s ease;
+
+			&:hover {
+				background: rgba(var(--md-accent-color-rgb), 0.12) !important;
+			}
+
+			// 清除原生子项身上可能残留的奇怪 margin-right
+			> * {
+				margin-right: 0 !important;
+			}
+
+			// 头像容器: 28x28 正圆，严格居中，清除可能存在的原生挤压
+			div[class*="Container_"] {
+				width: 28px !important;
+				height: 28px !important;
+				margin: 0 !important;
+				padding: 0 !important;
+				display: flex !important;
+				align-items: center !important;
+				justify-content: center !important;
+				flex-shrink: 0 !important;
+				border-radius: 50% !important;
+
+				img {
+					width: 28px !important;
+					height: 28px !important;
+					border-radius: 50% !important;
+				}
+			}
+
+			// 昵称文字行: 垂直严格居中，行高对齐
+			div[class*="Row_"] {
+				display: inline-flex !important;
+				align-items: center !important;
+				margin: 0 !important;
+				padding: 0 !important;
+				line-height: 1 !important;
+
+				span[class*="Name_"] {
+					line-height: 1 !important;
+					vertical-align: middle !important;
+					font-weight: 500 !important;
+				}
+			}
+
+			// 彻底隐藏黑胶 VIP 标识与等级图标容器
+			div[class*="Content_"],
+			div[class*="Icon_"],
+			[data-log*="vip"],
+			[class*="vip"],
+			[class*="Vip"] {
+				display: none !important;
+			}
+
+			// 下拉小箭头: 垂直轴居中，比例协调
+			span.cmd-icon-unfold,
+			[class*="cmd-icon-unfold"] {
+				display: inline-flex !important;
+				align-items: center !important;
+				justify-content: center !important;
+				margin: 0 !important;
+				width: 14px !important;
+				height: 14px !important;
+				flex-shrink: 0 !important;
+				opacity: 0.7 !important;
+
+				svg {
+					width: 14px !important;
+					height: 14px !important;
+				}
+			}
 		}
-	}
 }

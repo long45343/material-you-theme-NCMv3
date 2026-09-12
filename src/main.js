@@ -912,9 +912,9 @@ const probeAndWatchAppThemeMode = () => {
 				const closeIcon = nav.querySelector('[title="关闭"] .cmd-icon, .cmd-icon-close');
 				replaceIconSvg(closeIcon, CUSTOM_NAV_SVGS.close, 'close');
 
-				// 7. 返回箭头
-				const backIcon = nav.querySelector('[data-testid="tid_header_back_btn"]');
-				replaceIconSvg(backIcon, CUSTOM_NAV_SVGS.back, 'back');
+					// 7. 返回箭头 (增加 3.1.27 降级链匹配: .cmd-icon-backward 与 .arr)
+					const backIcon = nav.querySelector('[data-testid="tid_header_back_btn"], [class*="HistoryIconBackground_"] .cmd-icon, [class*="HistoryIconBackground_"] .arr, .cmd-icon-backward');
+					replaceIconSvg(backIcon, CUSTOM_NAV_SVGS.back, 'back');
 
 				// 8. 搜索框放大镜
 				const searchBtn = nav.querySelector('[data-testid*="tid_searchbox_btn"] .cmd-button-content')
