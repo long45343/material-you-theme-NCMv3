@@ -157,26 +157,40 @@ body.material-you-theme #page_pc_main_nav {
 		}
 	}
 
-	[class*="IconBar_"] {
-		width: auto !important;
-		display: flex !important;
-		align-items: center !important;
-		justify-content: flex-end !important;
-	}
+		[class*="IconBar_"] {
+			width: auto !important;
+			display: flex !important;
+			align-items: center !important;
+			justify-content: flex-end !important;
+			gap: 14px !important;
+		}
 
-	// 彻底弃用/清空原生 MiniModeIconBar_
-	[class*="MiniModeIconBar_"] {
-		display: none !important;
-	}
+		// 原生 MiniModeIconBar_ 正常行内弹性排布内部功能图标 (✉ 与 ⚙)
+		[class*="MiniModeIconBar_"] {
+			display: inline-flex !important;
+			align-items: center !important;
+			gap: 14px !important;
+			width: auto !important;
+			margin: 0 !important;
+			padding: 0 !important;
 
-	// 彻底删除/隐藏 mini 模式按钮与相关占位逻辑
-	[title="mini模式"],
-	[title="全屏纯享"],
-	.cmd-icon-mini,
-	[data-log*="btn_pc_main_nav_mini"],
-	[class*="popover_pyebpyq"] {
-		display: none !important;
-	}
+			// 精准隐藏换肤所在的末尾 BadgeWrapper 占位容器，消除多余的 14px 假间距
+			> div[class*="BadgeWrapper_"]:last-of-type,
+			> div[class*="BadgeWrapper_"]:last-child {
+				display: none !important;
+			}
+		}
+
+		// 彻底删除/隐藏 mini 模式按钮与换肤按钮本体 (绝不隐藏父容器)
+		[title="mini模式"],
+		[title="全屏纯享"],
+		.cmd-icon-mini,
+		[data-log*="btn_pc_main_nav_mini"],
+		.cmd-icon-skin,
+		[title="换肤"],
+		[class*="popover_pyebpyq"] {
+			display: none !important;
+		}
 
 	// 竖线分隔符
 	[class*="Divider_"] {

@@ -806,87 +806,55 @@ const probeAndWatchAppThemeMode = () => {
 	update();
 };
 
-// ---------------------------------------------------------------- 设置入口与顶栏功能图标统合容器 (Q5 实施)
-const injectSettingsEntry = () => {
-	waitForElement('#page_pc_main_nav', (nav) => {
-		// 创建统合排布容器 #md-custom-icon-bar (排布 ✉, ⚙, 🎵, 🎨)
-		const customBar = document.createElement('div');
-		customBar.id = 'md-custom-icon-bar';
-		customBar.className = 'md-custom-icon-bar';
+// ---------------------------------------------------------------- 设置入口挂载 (遵循铁律: 绝不物理搬移任何 React 管理的原生 DOM 节点)
+	const injectSettingsEntry = () => {
+		waitForElement('#page_pc_main_nav', (nav) => {
+			const container = document.createElement('div');
+			container.id = 'md-settings-menu-container';
+			container.className = 'md-settings-menu-container';
+			container.addEventListener('dblclick', (e) => e.stopPropagation());
+			container.addEventListener('mousedown', (e) => e.stopPropagation());
 
-		const container = document.createElement('div');
-		container.id = 'md-settings-menu-container';
-		container.className = 'md-settings-menu-container';
-		container.addEventListener('dblclick', (e) => e.stopPropagation());
-		container.addEventListener('mousedown', (e) => e.stopPropagation());
+			// React/ReactDOM 由客户端 vendor 挂载,需等待就绪
+			const waitReactDOM = setInterval(() => {
+				if (window.ReactDOM && window.React) {
+					clearInterval(waitReactDOM);
+					initSettingMenu();
+				}
+			}, 200);
 
-		// 调色盘加入统合容器末尾
-		customBar.appendChild(container);
+			try {
+				const getAnchor = () => nav.querySelector('[class*="IconBar_"]') ?? nav;
 
-		// React/ReactDOM 由客户端 vendor 挂载,需等待就绪
-		const waitReactDOM = setInterval(() => {
-			if (window.ReactDOM && window.React) {
-				clearInterval(waitReactDOM);
-				initSettingMenu();
+				let attachTimer = null;
+				const attachContainer = () => {
+					const anchor = getAnchor();
+					const winBar = anchor.querySelector('[class*="WindowOpBarContainer_"]');
+					const divider = anchor.querySelector('[class*="Divider_"]') || winBar;
+
+					// 仅将自建的调色盘 container 安全插入到分隔线或窗口控制之前，绝不搬动任何原生已有节点
+					if (container.parentElement !== anchor || (divider && container.nextElementSibling !== divider && divider.parentElement === anchor)) {
+						anchor.insertBefore(container, divider && divider.parentElement === anchor ? divider : null);
+					}
+
+					// 精准隐藏换肤外层 BadgeWrapper 的 Flex 占位 (仅改内联样式，绝对不搬动节点)
+					const skinIcon = nav.querySelector('.cmd-icon-skin');
+					if (skinIcon) {
+						const skinBadge = skinIcon.closest('[class*="BadgeWrapper"]') ?? skinIcon;
+						skinBadge.style.setProperty('display', 'none', 'important');
+					}
+				};
+
+				attachContainer();
+				new MutationObserver(() => {
+					clearTimeout(attachTimer);
+					attachTimer = setTimeout(attachContainer, 50);
+				}).observe(nav, { childList: true });
+			} catch (e) {
+				console.error('MD3 nav decorations', e);
 			}
-		}, 200);
-
-		try {
-			// 锚点: 原生 IconBar_i1ueu1yn 内部的窗口控制或分隔线之前
-			const getAnchor = () => nav.querySelector('[class*="IconBar_"]') ?? nav;
-
-			const reattach = () => {
-				const anchor = getAnchor();
-				const winBar = anchor.querySelector('[class*="WindowOpBarContainer_"]');
-				const divider = anchor.querySelector('[class*="Divider_"]') || winBar;
-
-				if (customBar.parentElement !== anchor || (divider && customBar.nextElementSibling !== divider && divider.parentElement === anchor)) {
-					anchor.insertBefore(customBar, divider && divider.parentElement === anchor ? divider : null);
-				}
-
-				// 将原生 ✉、⚙、🎵 挂载进 customBar
-				const msgBtn = nav.querySelector('[data-testid="tid_header_msg_btn"]')?.closest('[class*="BadgeWrapper"]')
-					|| nav.querySelector('.cmd-icon-message')?.closest('[class*="BadgeWrapper"]')
-					|| nav.querySelector('[data-testid="tid_header_msg_btn"]');
-
-				const settingBtn = nav.querySelector('[data-testid="tid_header_setting_btn"]')?.closest('[class*="BadgeWrapper"]')
-					|| nav.querySelector('.cmd-icon-setting:not([title="BetterNCM"])')?.closest('[class*="BadgeWrapper"]')
-					|| nav.querySelector('[data-testid="tid_header_setting_btn"]');
-
-				const bncmBtn = document.querySelector('[title="BetterNCM"]');
-
-				// 顺序依次为: ✉ -> ⚙ -> 🎵 -> 🎨 (container)
-				if (msgBtn && msgBtn.parentElement !== customBar) {
-					customBar.insertBefore(msgBtn, customBar.firstChild);
-				}
-				if (settingBtn && settingBtn.parentElement !== customBar) {
-					// 插入在 msgBtn 之后，或 container 之前
-					customBar.insertBefore(settingBtn, container);
-				}
-				if (bncmBtn && bncmBtn.parentElement !== customBar) {
-					// 插入在 settingBtn 之后，container 之前
-					customBar.insertBefore(bncmBtn, container);
-				}
-			};
-
-			reattach();
-			new MutationObserver(reattach).observe(nav, { childList: true, subtree: true });
-
-			// 隐藏网易云皮肤切换入口与 mini 模式按钮
-			const hideEntries = () => {
-				const icon = nav.querySelector('.cmd-icon-skin');
-				if (icon) {
-					const btn = icon.closest('[class*="BadgeWrapper"]') ?? icon.closest('.cmd-badge') ?? icon.closest('button') ?? icon;
-					btn.style.display = 'none';
-				}
-			};
-			hideEntries();
-			new MutationObserver(hideEntries).observe(nav, { childList: true, subtree: true });
-		} catch (e) {
-			console.error('MD3 nav decorations', e);
-		}
-	});
-};
+		});
+	};
 
 			// ---------------------------------------------------------------- 顶栏图标重绘 (全部统一定制 Material Symbols，加粗 20%)
 			const CUSTOM_NAV_SVGS = {
@@ -965,8 +933,13 @@ const injectSettingsEntry = () => {
 				});
 			};
 
-			applyIcons();
-			new MutationObserver(applyIcons).observe(document.body, { childList: true, subtree: true });
+				let iconsTimer = null;
+				const debouncedApplyIcons = () => {
+					clearTimeout(iconsTimer);
+					iconsTimer = setTimeout(applyIcons, 50);
+				};
+				applyIcons();
+				new MutationObserver(debouncedApplyIcons).observe(document.body, { childList: true, subtree: true });
 		};
 
 // ---------------------------------------------------------------- 问候语(保留,样式层可选消费)
