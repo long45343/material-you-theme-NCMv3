@@ -25,7 +25,7 @@ try {
 		window.loadedPlugins = window.loadedPlugins || {};
 		if (!window.loadedPlugins['MaterialYouTheme']) {
 			window.loadedPlugins['MaterialYouTheme'] = window.loadedPlugins['material-u-theme-ncmv3'] || {
-				manifest: { name: 'MaterialYouTheme', version: '1.0.1-alpha' }
+					manifest: { name: 'MaterialYouTheme', version: '1.0.2-alpha' }
 			};
 		}
 	}
