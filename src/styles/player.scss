@@ -1,6 +1,7 @@
 // player.scss — 播放条与 MD3 桌面端直轨滑块规范重构
 // 1. 严格锁定 footer 为原生 position: fixed 底栏悬浮定位，绝对严禁改为 relative (否则踩中 Flex 挤压分裂主页)
-body.material-you-theme footer {
+// 兼容 RNP: 在 RNP 全屏展开时 (:not(.rnp-lyric-page-open):not(.mq-playing)) 排除放行，以便 RNP 顺畅推离原生底栏
+body.material-you-theme:not(.rnp-lyric-page-open):not(.mq-playing) footer {
 	position: fixed !important;
 	bottom: 0 !important;
 	left: 0 !important;
@@ -16,7 +17,7 @@ body.material-you-theme footer {
 
 // 2. MD3 桌面端直轨滑块规范实装
 body.material-you-theme {
-	// 进度条挂载容器：将其向上外边距提升，直接紧贴并骑在 footer 最顶沿与主页交界线上
+	// 进度条挂载容器：紧贴在 footer 最顶沿
 	[class*="SpaceContainer_"] {
 		position: absolute !important;
 		top: 0 !important;
@@ -29,7 +30,7 @@ body.material-you-theme {
 		z-index: 10 !important;
 	}
 
-	// 进度条直轨本体
+	// 进度条直轨本体 (几何内敛 top: 0，杜绝向上越界被 RNP 误判为点击底栏空白区)
 	[class*="StyledSliderContainer_"],
 	.slider-default,
 	.slider-vinyl {
@@ -53,10 +54,10 @@ body.material-you-theme {
 			            transform 150ms cubic-bezier(0.2, 0, 0, 1) !important;
 		}
 
-		// 静止/播放默认态: 轨道高度 4px，全圆角 9999px，正贴于 footer 顶分界线 (top: -2px 居中切线)
+		// 静止/播放默认态: 轨道高度 4px，全圆角 9999px，内敛贴于 footer 顶沿
 		&:not(:hover):not(.dragging) {
 			height: 4px !important;
-			top: -2px !important;
+			top: 0 !important;
 
 			&::before,
 			.track {
@@ -93,10 +94,10 @@ body.material-you-theme {
 			opacity: 1 !important;
 		}
 
-		// 悬停态 (Hover): 轨道膨胀至 6px，向上平分 3px 跨界主页与底栏 (top: -3px)
+		// 悬停态 (Hover): 轨道膨胀至 6px，严格内敛在底栏内
 		&:hover {
 			height: 6px !important;
-			top: -3px !important;
+			top: 0 !important;
 
 			&::before,
 			.track {
@@ -121,7 +122,7 @@ body.material-you-theme {
 		// 拖拽激活态 (Dragging / Active)
 		&.dragging {
 			height: 6px !important;
-			top: -3px !important;
+			top: 0 !important;
 
 			&::before,
 			.track {

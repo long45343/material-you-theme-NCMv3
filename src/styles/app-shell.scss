@@ -1,2 +1,21 @@
 // app-shell.scss — 窗口外壳(圆角/透明等,backlog:全透明框架)
 // v1:仅保证外壳背景不与主题背景冲突。
+
+// RNP 歌词渲染可见性与对比度兜底保障:
+// 1. 强制歌词容器在全屏展开时处于完全不透明且可见状态
+body.rnp-lyric-page-open #rnp-view .lyric {
+	opacity: 1 !important;
+	visibility: visible !important;
+}
+
+// 2. 歌词主文本与逐词/副歌词对比度兜底，杜绝外部变量解析异常导致的文字隐形
+#rnp-view .rnp-lyrics {
+	color: var(--rnp-accent-color-shade-2, #ffffff) !important;
+}
+body.md-light #rnp-view .rnp-lyrics {
+	color: var(--rnp-accent-color-shade-2, #1e1e22) !important;
+}
+#rnp-view .rnp-lyrics-line-original,
+#rnp-view .rnp-lyrics-line-karaoke {
+	color: inherit !important;
+}

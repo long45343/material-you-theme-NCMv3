@@ -19,6 +19,18 @@ import { initSettingMenu } from './settings.js';
 import { themeFromSourceColor, QuantizerCelebi, Hct, Score, SchemeExpressive, SchemeVibrant, SchemeMonochrome, SchemeFidelity, SchemeTonalSpot, SchemeNeutral, MaterialDynamicColors } from '@material/material-color-utilities';
 import { buildTokenCSS, rgba, mix as mixRgb, foregroundOf, FOREGROUND_ALPHA } from './theme-tokens.js';
 
+// 兼容性适配: 为依赖旧版 MaterialYouTheme 标识的第三方插件 (如 Refined Now Playing Next) 注入别名映射
+try {
+	if (typeof window !== 'undefined') {
+		window.loadedPlugins = window.loadedPlugins || {};
+		if (!window.loadedPlugins['MaterialYouTheme']) {
+			window.loadedPlugins['MaterialYouTheme'] = window.loadedPlugins['material-u-theme-ncmv3'] || {
+				manifest: { name: 'MaterialYouTheme', version: '1.0.1-alpha' }
+			};
+		}
+	}
+} catch (e) {}
+
 const migrateSettings = () => {
 	if (getSetting('scheme') == 'dynamic-auto') {
 		setSetting('scheme', 'dynamic-default-auto');
@@ -27,7 +39,32 @@ const migrateSettings = () => {
 
 // ---------------------------------------------------------------- 状态
 window.mdScheme = null;          // 当前方案名
-window.mdThemeType = null;       // 'light' | 'dark'
+
+// 响应式代理 window.mdThemeType: 拦截外部直接改写并自动触发主题重绘自愈
+let _mdThemeType = null;
+let _isSyncingThemeType = false;
+try {
+	Object.defineProperty(window, 'mdThemeType', {
+		get: () => _mdThemeType,
+		set: (val) => {
+			if (_mdThemeType === val) return;
+			_mdThemeType = val;
+			if (!_isSyncingThemeType && typeof setThemeType === 'function') {
+				_isSyncingThemeType = true;
+				try {
+					setThemeType(val);
+				} finally {
+					_isSyncingThemeType = false;
+				}
+			}
+		},
+		configurable: true,
+		enumerable: true
+	});
+} catch (e) {
+	window.mdThemeType = null;
+}
+
 window.mdCoverDominantColor = null;   // 封面主色 (ARGB)
 window.mdBGEnhancedDominantColor = null; // 播放页背景主色 (ARGB)
 window.mdActivePreset = null;    // 非动态方案时激活的预设
@@ -222,12 +259,23 @@ const ensureBgFader = () => {
 };
 const bgTokenColor = (colors, dark) => rgba(dark ? colors.bg : mixRgb(colors.bg, [226, 229, 233], 0.55), 1);
 
+// 判断 RNP (Refined Now Playing Next) 是否存在或处于激活态
+const isRNPActive = () => {
+	return Boolean(
+		document.body.classList.contains('refined-now-playing')
+		|| document.body.classList.contains('rnp-lyric-page-open')
+		|| (typeof loadedPlugins !== 'undefined' && (loadedPlugins.RefinedNowPlayingNext || loadedPlugins['RefinedNowPlayingNext']))
+		|| document.getElementById('rnp-view')
+	);
+};
+
 // Q1 实施: 直写播放页内联样式 (--colorBlack* & --colorWhite*) 并维护守卫
 // 逆向发现: NCM 播放页组件原生直接消费 --colorWhite1..12 作为主要文字颜色!
 // 在亮色模式下, 必须将 --colorWhite* 和 --colorBlack* 都覆写为深色前景;
 // 在暗色模式下, --colorWhite* 保持浅色/纯白, --colorBlack* 覆写为浅色前景。
 let currentSongplayFg = null;
 const applySongplayInlineTokens = (fg) => {
+	if (isRNPActive()) return; // 冲突点3实施: RNP完全接管播放页，跳过对原生播放页的内联样式覆写
 	if (fg) currentSongplayFg = fg;
 	if (!currentSongplayFg) return;
 	const isDark = window.mdThemeType === 'dark';
@@ -258,6 +306,7 @@ const applySongplayInlineTokens = (fg) => {
 const setupSongplayWatcher = () => {
 	let timer = null;
 	const check = () => {
+		if (isRNPActive()) return; // 冲突点3实施: 挂起空转监听，完全由 RNP 接管正在播放页
 		const page = document.querySelector('#page_pc_songplay') || document.querySelector('#vinyl-page-container');
 		if (page && currentSongplayFg) {
 			const isDark = window.mdThemeType === 'dark';
@@ -269,6 +318,7 @@ const setupSongplayWatcher = () => {
 		}
 	};
 	new MutationObserver(() => {
+		if (isRNPActive()) return; // RNP 激活时不触发延时检查
 		clearTimeout(timer);
 		timer = setTimeout(check, 50);
 	}).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
@@ -318,11 +368,57 @@ const refreshTheme = () => {
 		tokenStyleController.innerHTML = buildTokenCSS(colors, mode);
 	const __t3 = performance.now();
 
-	// 强调色变量(设置面板与插件样式消费)
-	updateAccentColor(colors.primary, 'primary');
-	updateAccentColor(colors.secondary, 'secondary');
-	updateAccentColor(colors.bg, 'bg');
-	updateAccentColor(colors.bgDarken, 'bg-darken');
+		// 强调色变量(设置面板与插件样式消费)
+		updateAccentColor(colors.primary, 'primary');
+		updateAccentColor(colors.secondary, 'secondary');
+		updateAccentColor(colors.bg, 'bg');
+		updateAccentColor(colors.bgDarken, 'bg-darken');
+
+			// 冲突点4实施: 正向桥接 RNP 强调色变量，实现全客户端与 RNP 全屏歌词页色彩 100% 严密同频
+			// 注意: RNP 歌词文字直接消费 --rnp-accent-color-shade-2，副歌词消费 shade-1。
+			// 必须完整注入对应全套色阶，杜绝变量为空导致歌词文字透明/隐形。
+			if (colors.primary) {
+				const [r, g, b] = colors.primary;
+				const rgbStr = `${r}, ${g}, ${b}`;
+				const colorRgb = `rgb(${rgbStr})`;
+				const isDark = mode === 'dark';
+				const bStyle = document.body.style;
+
+				bStyle.setProperty('--rnp-accent-color', colorRgb);
+				bStyle.setProperty('--rnp-accent-color-rgb', rgbStr);
+				bStyle.setProperty('--rnp-accent-color-dark', colorRgb);
+				bStyle.setProperty('--rnp-accent-color-dark-rgb', rgbStr);
+				bStyle.setProperty('--rnp-accent-color-light', colorRgb);
+				bStyle.setProperty('--rnp-accent-color-light-rgb', rgbStr);
+
+				if (isDark) {
+					// 暗色模式: 歌词主文字高亮纯白，次级文字淡灰
+					bStyle.setProperty('--rnp-accent-color-shade-2', '#ffffff');
+					bStyle.setProperty('--rnp-accent-color-shade-2-rgb', '255, 255, 255');
+					bStyle.setProperty('--rnp-accent-color-shade-1', 'rgba(255, 255, 255, 0.75)');
+					bStyle.setProperty('--rnp-accent-color-shade-1-rgb', '240, 240, 240');
+					bStyle.setProperty('--rnp-accent-color-on-primary', '#ffffff');
+					bStyle.setProperty('--rnp-accent-color-contrast', '#ffffff');
+					bStyle.setProperty('--rnp-accent-color-contrast-rgb', '255, 255, 255');
+					bStyle.setProperty('--rnp-accent-color-overlay', '#000000');
+				} else {
+					// 亮色模式: 歌词主文字深黑板岩色，次级文字深灰
+					bStyle.setProperty('--rnp-accent-color-shade-2', '#1e1e22');
+					bStyle.setProperty('--rnp-accent-color-shade-2-rgb', '30, 30, 34');
+					bStyle.setProperty('--rnp-accent-color-shade-1', 'rgba(30, 30, 34, 0.75)');
+					bStyle.setProperty('--rnp-accent-color-shade-1-rgb', '70, 70, 75');
+					bStyle.setProperty('--rnp-accent-color-on-primary', '#000000');
+					bStyle.setProperty('--rnp-accent-color-contrast', '#000000');
+					bStyle.setProperty('--rnp-accent-color-contrast-rgb', '0, 0, 0');
+					bStyle.setProperty('--rnp-accent-color-overlay', '#ffffff');
+				}
+
+				if (colors.secondary) {
+					const [sr, sg, sb] = colors.secondary;
+					bStyle.setProperty('--rnp-accent-color-bg', `rgb(${sr}, ${sg}, ${sb})`);
+					bStyle.setProperty('--rnp-accent-color-bg-rgb', `${sr}, ${sg}, ${sb}`);
+				}
+			}
 
 
 	applyNativeAppearance(colors.primary);
@@ -453,13 +549,18 @@ export const applyScheme = (scheme) => {
 
 // 显式设置亮暗(auto 模式下由探测层调用)
 const setThemeType = (mode) => {
-	const changed = window.mdThemeType !== mode;
-	window.mdThemeType = mode;
-	document.body.classList.toggle('md-light', mode === 'light');
-	document.body.classList.toggle('md-dark', mode === 'dark');
-	refreshTheme();
-	if (changed) {
-		document.body.dispatchEvent(new CustomEvent('md-dynamic-theme-auto'));
+	const changed = _mdThemeType !== mode;
+	_isSyncingThemeType = true;
+	try {
+		_mdThemeType = mode;
+		document.body.classList.toggle('md-light', mode === 'light');
+		document.body.classList.toggle('md-dark', mode === 'dark');
+		refreshTheme();
+		if (changed) {
+			document.body.dispatchEvent(new CustomEvent('md-dynamic-theme-auto'));
+		}
+	} finally {
+		_isSyncingThemeType = false;
 	}
 };
 const refreshThemeWithCurrentMode = () => {
