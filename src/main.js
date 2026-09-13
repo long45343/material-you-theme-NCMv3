@@ -19,14 +19,22 @@ import { initSettingMenu } from './settings.js';
 import { themeFromSourceColor, QuantizerCelebi, Hct, Score, SchemeExpressive, SchemeVibrant, SchemeMonochrome, SchemeFidelity, SchemeTonalSpot, SchemeNeutral, MaterialDynamicColors } from '@material/material-color-utilities';
 import { buildTokenCSS, rgba, mix as mixRgb, foregroundOf, FOREGROUND_ALPHA } from './theme-tokens.js';
 
-// 兼容性适配: 为依赖旧版 MaterialYouTheme 标识的第三方插件 (如 Refined Now Playing Next) 注入别名映射
+// 兼容性适配: 为依赖旧版 MaterialYouTheme 标识的第三方插件 (如 Refined Now Playing Next) 注入别名映射。
+// 必须为不可枚举属性: BetterNCM 管理器侧边栏按 Object.keys(loadedPlugins) 渲染条目,
+// 可枚举的别名会被当成第二个插件渲染成同名重复行。
 try {
 	if (typeof window !== 'undefined') {
 		window.loadedPlugins = window.loadedPlugins || {};
 		if (!window.loadedPlugins['MaterialYouTheme']) {
-			window.loadedPlugins['MaterialYouTheme'] = window.loadedPlugins['material-u-theme-ncmv3'] || {
-					manifest: { name: 'MaterialYouTheme', version: '1.0.2-alpha' }
-			};
+			Object.defineProperty(window.loadedPlugins, 'MaterialYouTheme', {
+				configurable: true,
+				enumerable: false,
+				get() {
+					return window.loadedPlugins['material-u-theme-ncmv3'] || {
+						manifest: { name: 'MaterialYouTheme', version: '1.0.2-alpha' }
+					};
+				}
+			});
 		}
 	}
 } catch (e) {}

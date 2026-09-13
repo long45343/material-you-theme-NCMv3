@@ -13,6 +13,8 @@
 	overflow: visible;
 	vertical-align: middle;
 	position: relative;
+	// 墨迹实测: 原生图标中心线在 y=35.5,本按钮因 inline 基线对齐偏低 1px,上提对齐
+	top: -1px;
 	z-index: 9999;
 }
 
