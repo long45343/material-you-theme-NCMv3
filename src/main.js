@@ -30,9 +30,9 @@ try {
 				configurable: true,
 				enumerable: false,
 				get() {
-					return window.loadedPlugins['material-u-theme-ncmv3'] || {
-						manifest: { name: 'MaterialYouTheme', version: '1.0.2-alpha' }
-					};
+						return window.loadedPlugins['material-u-theme-ncmv3'] || {
+							manifest: { name: 'MaterialYouTheme', version: '1.0.3' }
+						};
 				}
 			});
 		}
