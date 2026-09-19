@@ -44,4 +44,58 @@ body.material-you-theme {
 			box-shadow: var(--md-elev-1) !important;
 		}
 	}
+
+	// 歌单/详情页简介展开浮层 MD3 规范化
+	[class*="StyledOverlayDescription_"],
+	[class*="StyledDescription_s1ie3m3c"] {
+		border-radius: 12px !important;
+		box-shadow: var(--md-elev-2) !important;
+		background-color: var(--colorFunction4) !important;
+
+		.content {
+			color: var(--colorBlack5) !important;
+		}
+
+		.close {
+			color: var(--colorBlack3) !important;
+			border-radius: 50% !important;
+			transition: background-color 0.2s ease, color 0.2s ease !important;
+
+			&:hover {
+				color: var(--colorBlack1) !important;
+				background-color: var(--colorBlack11) !important;
+			}
+		}
+	}
+
+	// 播客页面分类入口标签 MD3 规范化
+	[class*="StyledCategorysEntrance_"] {
+		.item {
+			border-radius: 10px !important;
+			background-color: var(--colorFunction4) !important;
+			color: var(--colorBlack3) !important;
+			box-shadow: var(--md-elev-1) !important;
+			transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease !important;
+
+			&:hover {
+				background-color: rgba(var(--md-accent-color-rgb), 0.12) !important;
+				color: var(--colorPrimary1) !important;
+				box-shadow: var(--md-elev-1) !important;
+			}
+
+			&:active {
+				transform: scale(0.96) !important;
+			}
+
+			&[class*="item-more"] {
+				border: 1px solid var(--colorBlack10) !important;
+				background-color: transparent !important;
+				box-shadow: none !important;
+
+				&:hover {
+					background-color: rgba(var(--md-accent-color-rgb), 0.08) !important;
+				}
+			}
+		}
+	}
 }
