@@ -90,6 +90,14 @@ body.material-you-theme #page_pc_main_nav [title="BetterNCM"] {
 // 5. 右侧窗口控制 (🗕 - 12px - 🗖/还原 - 12px - ✕)
 // 6. 用户胶囊 (.Bar_b2jgnke) 向左移动约 50px
 body.material-you-theme #page_pc_main_nav {
+	// 用户指定锁定原生 40px 右内边距,确保全尺寸下关闭按钮始终稳固停靠在距右 40px,绝不漂移贴边
+	padding-right: 40px !important;
+
+	// 覆盖网格列划分: 第 3 列由固定 258px 改为 minmax(120px, 258px) 弹性列,窄屏自适应收缩让位,彻底守卫右侧 40px 安全留白
+	[class*="HeaderRow_"] {
+		grid-template-columns: 32px 8px minmax(120px, 258px) 8px 36px 20px auto 20px min-content !important;
+	}
+
 	// 用户胶囊自适应网格防碰撞重构:
 	// 彻底清除静态 transform: translateX，改用 Grid/Flex 盒模型的 margin 约束；
 	// 1. 声明 margin-left: 16px !important，保障窄窗下绝不侵入左侧麦克风胶囊；
@@ -252,96 +260,118 @@ body.material-you-theme #page_pc_main_nav {
 				}
 			}
 
-		// 2. 搜索框 (消除外层矩形虚影，精准放行放大镜图标，彻底消灭 ::after 渐变伪元素边框)
-		[class*="SearchWrapper_"],
-		[class*="DomWarpper_"] {
-			background: transparent !important;
-			border: none !important;
-			box-shadow: none !important;
-			outline: none !important;
-
-			&::before,
-			&::after {
-				display: none !important;
-			}
-
-			.searchbox {
-				background-color: transparent !important;
-				background-image: none !important;
+			// 2. 搜索框 (消除外层矩形虚影，精准放行放大镜图标，彻底消灭 ::after 渐变伪元素边框)
+			// 支持窄屏弹性收缩(配合 HeaderRow 网格)，且保持 overflow: visible 确保 779px 搜索下拉面板不被裁剪
+			[class*="SearchWrapper_"],
+			[class*="DomWarpper_"] {
+				width: 100% !important;
+				max-width: 258px !important;
+				min-width: 0 !important;
+				background: transparent !important;
 				border: none !important;
 				box-shadow: none !important;
 				outline: none !important;
-				border-radius: 999px !important;
 
 				&::before,
 				&::after {
 					display: none !important;
 				}
-			}
-		}
 
-		[class*="SearchWrapper_"] [class*="cmd-input-wrapper"] {
-			background: rgba(var(--md-accent-color-rgb), 0.06) !important;
-			background-image: none !important;
-			border-radius: 999px !important;
-			border: none !important;
-			box-shadow: none !important;
-			outline: none !important;
+				.searchbox {
+					width: 100% !important;
+					max-width: 258px !important;
+					min-width: 0 !important;
+					background-color: transparent !important;
+					background-image: none !important;
+					border: none !important;
+					box-shadow: none !important;
+					outline: none !important;
+					border-radius: 999px !important;
 
-			&::before,
-			&::after {
-				display: none !important;
-			}
-
-			&:focus-within {
-				background: rgba(var(--md-accent-color-rgb), 0.12) !important;
-			}
-
-			// 精确清理推荐歌曲封面图/黑块，严禁误杀放大镜前缀容器
-			img,
-			[class*="cover"],
-			[style*="background-image"] {
-				display: none !important;
+					&::before,
+					&::after {
+						display: none !important;
+					}
+				}
 			}
 
-			// 放大镜图标与前缀按钮规范化 (左移贴边、粗细位置对齐)
-			.cmd-input-prefix,
-			.prefix-icon,
-			[data-testid*="tid_searchbox_btn"] {
-				display: inline-flex !important;
+			[class*="SearchWrapper_"] [class*="cmd-input-wrapper"] {
+				width: 100% !important;
+				max-width: 258px !important;
+				min-width: 0 !important;
+				display: flex !important;
 				align-items: center !important;
-				justify-content: center !important;
-				background: transparent !important;
+				background: rgba(var(--md-accent-color-rgb), 0.06) !important;
+				background-image: none !important;
+				border-radius: 999px !important;
 				border: none !important;
 				box-shadow: none !important;
-				padding: 0 !important;
-				margin-left: 10px !important;
-				margin-right: 0 !important;
-				color: rgba(var(--md-accent-color-secondary-rgb), 0.8) !important;
+				outline: none !important;
 
-				.icon,
-				.cmd-icon,
-				.cmd-icon-search,
-				.cmd-button-content,
-				svg {
+				&::before,
+				&::after {
+					display: none !important;
+				}
+
+				&:focus-within {
+					background: rgba(var(--md-accent-color-rgb), 0.12) !important;
+				}
+
+				// 精确清理推荐歌曲封面图/黑块，严禁误杀放大镜前缀容器
+				img,
+				[class*="cover"],
+				[style*="background-image"] {
+					display: none !important;
+				}
+
+				// 放大镜图标与前缀按钮规范化 (左移贴边、粗细位置对齐，必须 flex-shrink: 0 杜绝被压缩变形)
+				.cmd-input-prefix,
+				.prefix-icon,
+				[data-testid*="tid_searchbox_btn"] {
+					flex-shrink: 0 !important;
 					display: inline-flex !important;
 					align-items: center !important;
 					justify-content: center !important;
-					width: 18px !important;
-					height: 18px !important;
+					background: transparent !important;
+					border: none !important;
+					box-shadow: none !important;
+					padding: 0 !important;
+					margin-left: 10px !important;
+					margin-right: 0 !important;
 					color: rgba(var(--md-accent-color-secondary-rgb), 0.8) !important;
-					fill: currentColor !important;
-				}
-			}
 
-			input.cmd-input {
-				padding-left: 6px !important;
-				color: rgba(var(--md-accent-color-secondary-rgb), 0.8) !important;
-				&::placeholder {
-					color: rgba(var(--md-accent-color-secondary-rgb), 0.35) !important;
+					.icon,
+					.cmd-icon,
+					.cmd-icon-search,
+					.cmd-button-content,
+					svg {
+						display: inline-flex !important;
+						align-items: center !important;
+						justify-content: center !important;
+						width: 18px !important;
+						height: 18px !important;
+						color: rgba(var(--md-accent-color-secondary-rgb), 0.8) !important;
+						fill: currentColor !important;
+					}
+				}
+
+				input.cmd-input {
+					flex: 1 1 auto !important;
+					min-width: 0 !important;
+					width: auto !important;
+					padding-left: 6px !important;
+					color: rgba(var(--md-accent-color-secondary-rgb), 0.8) !important;
+					&::placeholder {
+						color: rgba(var(--md-accent-color-secondary-rgb), 0.35) !important;
+					}
+				}
+
+				// 搜索输入后出现的清空叉叉按钮防挤压
+				.icon-clear,
+				[class*="icon-clear"] {
+					flex-shrink: 0 !important;
 				}
 			}
-		}
 
 		// 3. 语音识别(mic)按钮: 增加全圆角，消除 ::after 渐变描边与 border 虚影
 		[class*="listening"] {
