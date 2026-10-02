@@ -6,9 +6,19 @@
 body.material-you-theme .md-ripple-host {
 	position: absolute;
 	inset: 0;
+	width: 100% !important;
+	height: 100% !important;
+	min-width: 100% !important;
+	flex: none !important;
 	overflow: hidden;
 	border-radius: inherit;
 	pointer-events: none;
+	z-index: 1;
+}
+
+// 决策点 1-A: 显式锁定左侧栏歌单胶囊的圆角,防止继承断层
+body.material-you-theme #page_pc_main_tab [class*="PlayListItemContent_"] .background .md-ripple-host {
+	border-radius: 999px !important;
 }
 
 body.material-you-theme .md-ripple {

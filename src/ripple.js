@@ -3,29 +3,32 @@
 // 涟漪取按钮文字色 currentColor —— 与 MD3 state layer 规范一致(onSurface/onPrimary 覆层),
 // 实心主按钮上呈现白色涟漪、普通按钮上呈现深色涟漪,无需逐按钮配色。
 
-// 涟漪目标:原生按钮 + 网易云自绘的可点击行(类名依据 maintab.scss / pages.scss 的 recon 结果)
-// 1) 左侧栏胶囊导航/资料库项: [class*="ItemContainer_"],排除分组容器 NavItemContainer_
-// 2) 左侧栏歌单行: PlayListItemContent_ 内的 .background 胶囊(外层无圆角,内层才是胶囊)
-// 3) 歌曲表格行: .tbody .tr (歌单详情/搜索/我的音乐等所有列表)
+// 涟漪目标: 原生按钮 + 网易云自绘独立交互组件
+// 1) 各种独立按钮/角色按钮: button, [role="button"], .cmd-button, 色板预览块 .md-scheme-preview
+// 2) 左侧栏胶囊导航项: [class*="ItemContainer_"]:not([class*="NavItemContainer_"])
+// 3) 左侧栏歌单行: [class*="PlayListItemContent_"] (在 findTarget 中自动定向至内部 .background 胶囊)
+// 保护原则: 彻底排除歌曲虚拟长列表 (.tbody .tr) 等高动态复用管线，避免破坏 React 虚拟 DOM
 const RIPPLE_SELECTOR = [
 	'button',
 	'[role="button"]',
 	'.cmd-button',
 	'.md-scheme-preview',
 	'#page_pc_main_tab [class*="ItemContainer_"]:not([class*="NavItemContainer_"])',
-	'#page_pc_main_tab [class*="PlayListItemContent_"] .background',
 	'#page_pc_main_tab [class*="PlayListItemContent_"]',
-	'.tbody .tr',
+	'#page_pc_main_tab [class*="PlayListItemContent_"] .background',
 ].join(', ');
+
 const MAX_RIPPLES = 4;              // 单按钮同时存在的涟漪上限(超出移除最旧)
 const ENTER_MS = 500;               // 扩散时长
 const EXIT_MS = 200;                // 淡出时长
 const ENTER_EASING = 'cubic-bezier(0.2, 0, 0, 1)'; // MD3 emphasized
 const RIPPLE_OPACITY = 0.14;        // MD3 state layer 覆层不透明度
 const HOLD_TIMEOUT_MS = 3000;       // 按住不松的兜底回收(防止 pointerup 丢失造成泄漏)
+const DRAG_THRESHOLD = 6;           // 拖拽手势位移熔断阈值(px)
 
 const activeRipples = new Set();    // 已生成且未淡出的涟漪
 const pressedRipples = new Map();   // pointerId -> 涟漪
+let pointerStart = null;            // 记录起始点以区分点击与拖拽: { id, x, y }
 let keyRipple = null;               // 键盘激活产生的涟漪
 
 const isEnabled = () => {
@@ -33,42 +36,28 @@ const isEnabled = () => {
 	return Boolean(b) && b.classList.contains('material-you-theme') && b.classList.contains('md-ripple-enabled');
 };
 
-const MAX_FALLBACK_DEPTH = 10;    // 兜底向上探测层级
-const FALLBACK_AREA_RATIO = 0.6;  // 兜底元素面积上限(占视口比例),避免整页容器误判
-
-// 选择器未命中时的兜底:取最近的 cursor:pointer 祖先链顶端。
-// cursor 会继承,故子元素(文字 span 等)同样报 pointer —— 需沿链上溯到真正的可点击容器,
-// 才能让涟漪覆盖整个可点击区域而非一行文字;链条在首个非 pointer 祖先处结束。
-const findPointerAncestor = (t) => {
-	let el = t;
-	let found = null;
-	for (let i = 0; i < MAX_FALLBACK_DEPTH && el && el !== document.body && el !== document.documentElement; i++) {
-		if (getComputedStyle(el).cursor !== 'pointer') break;
-		const r = el.getBoundingClientRect();
-		// 面积超限(整页容器)时停在上一个合法元素,链条起点即超限则放弃兜底
-		if (r.width <= 0 || r.height <= 0 || r.width * r.height > innerWidth * innerHeight * FALLBACK_AREA_RATIO) break;
-		found = el;
-		el = el.parentElement;
-	}
-	return found;
-};
-
 const findTarget = (e) => {
 	const t = e.target;
 	if (!t || typeof t.closest !== 'function') return null;
 	let el = t.closest(RIPPLE_SELECTOR);
-	if (!el) el = findPointerAncestor(t);
 	if (!el || !el.isConnected) return null;
 	if (el.disabled || el.getAttribute('aria-disabled') === 'true') return null;
 	if (el.closest('[data-md-no-ripple]')) return null;
+
+	// 若命中歌单行（无论点击在外框、文字还是留白），将宿主强制重定向至内层的 .background 胶囊
+	if (el.matches && el.matches('[class*="PlayListItemContent_"]')) {
+		const bg = el.querySelector('.background');
+		if (bg) el = bg;
+	}
 	return el;
 };
 
-// 保证宿主元素可作为绝对定位裁剪容器:静态定位→relative。
-// 涟漪层覆在内容之上(与 MDC web 一致),因背景取 currentColor,
-// 文字本体不产生视觉变化,仅周围出现 MD3 state layer 覆层。
+// 保证宿主元素可作为绝对定位裁剪容器: 静态定位→relative, 并在用完时支持还原
 const prepareTarget = (el) => {
-	if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
+	if (getComputedStyle(el).position === 'static') {
+		el.style.position = 'relative';
+		el.__mdOriginalPositionStatic = true;
+	}
 };
 
 const ensureHost = (el) => {
@@ -82,24 +71,40 @@ const ensureHost = (el) => {
 	return host;
 };
 
+// 用完即焚: 涟漪淡出后若 host 为空，连同 host 一并销毁，还原内联 position，保持 0 DOM 垃圾残留
 const releaseRipple = (ripple) => {
 	if (!ripple || !activeRipples.has(ripple)) return;
 	activeRipples.delete(ripple);
+	const host = ripple.parentElement;
+	const el = host ? host.parentElement : null;
 	try {
 		ripple.animate(
 			[{ opacity: RIPPLE_OPACITY }, { opacity: 0 }],
 			{ duration: EXIT_MS, easing: 'linear', fill: 'forwards' }
 		);
 	} catch (e) { /* 动画不可用时直接移除 */ }
-	setTimeout(() => ripple.remove(), EXIT_MS + 60);
+	setTimeout(() => {
+		ripple.remove();
+		if (host && host.childElementCount === 0) {
+			host.remove();
+			if (el) {
+				delete el.__mdRippleHost;
+				if (el.__mdOriginalPositionStatic) {
+					el.style.position = '';
+					delete el.__mdOriginalPositionStatic;
+				}
+			}
+		}
+	}, EXIT_MS + 60);
 };
 
 const spawnRipple = (el, x, y) => {
+	// 性能优化: 先读取几何坐标，杜绝“修改样式/DOM后立即读几何”引发的 Layout Thrashing 强制重排
+	const rect = el.getBoundingClientRect();
 	prepareTarget(el);
 	const host = ensureHost(el);
 
-	const rect = el.getBoundingClientRect();
-	// MD3:涟漪直径 = 到最远角距离的 2 倍,保证松开前覆盖整个按钮
+	// MD3: 涟漪直径 = 到最远角距离的 2 倍, 保证松开前覆盖整个按钮
 	const dx = Math.max(x - rect.left, rect.right - x);
 	const dy = Math.max(y - rect.top, rect.bottom - y);
 	const size = Math.ceil(2 * Math.hypot(dx, dy));
@@ -131,14 +136,35 @@ const spawnRipple = (el, x, y) => {
 };
 
 export const setupRipple = () => {
+	const onPointerMove = (e) => {
+		if (!pointerStart || e.pointerId !== pointerStart.id) return;
+		const dist = Math.hypot(e.clientX - pointerStart.x, e.clientY - pointerStart.y);
+		// 决策点 4-A: 超过 6px 位移判定为拖拽或划选，立刻熔断淡出涟漪
+		if (dist > DRAG_THRESHOLD) {
+			const ripple = pressedRipples.get(pointerStart.id);
+			if (ripple !== undefined) {
+				pressedRipples.delete(pointerStart.id);
+				releaseRipple(ripple);
+			}
+			window.removeEventListener('pointermove', onPointerMove, true);
+			pointerStart = null;
+		}
+	};
+
 	window.addEventListener('pointerdown', (e) => {
 		if (!isEnabled() || e.button !== 0) return;
 		const el = findTarget(e);
 		if (!el) return;
+		pointerStart = { id: e.pointerId, x: e.clientX, y: e.clientY };
+		window.addEventListener('pointermove', onPointerMove, true);
 		pressedRipples.set(e.pointerId, spawnRipple(el, e.clientX, e.clientY));
 	}, true);
 
 	const endPress = (e) => {
+		if (pointerStart && pointerStart.id === e.pointerId) {
+			window.removeEventListener('pointermove', onPointerMove, true);
+			pointerStart = null;
+		}
 		const ripple = pressedRipples.get(e.pointerId);
 		if (ripple === undefined) return;
 		pressedRipples.delete(e.pointerId);
@@ -147,6 +173,10 @@ export const setupRipple = () => {
 	window.addEventListener('pointerup', endPress, true);
 	window.addEventListener('pointercancel', endPress, true);
 	window.addEventListener('blur', () => {
+		if (pointerStart) {
+			window.removeEventListener('pointermove', onPointerMove, true);
+			pointerStart = null;
+		}
 		pressedRipples.forEach((ripple) => releaseRipple(ripple));
 		pressedRipples.clear();
 		if (keyRipple) {
@@ -155,10 +185,20 @@ export const setupRipple = () => {
 		}
 	});
 
-	// 键盘激活(Enter/空格)也应有涟漪:以按钮中心为源
+	// 决策点 2-A: 键盘激活严格防线
 	document.addEventListener('keydown', (e) => {
 		if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
-		if (keyRipple || !isEnabled()) return;
+		if (e.repeat || keyRipple || !isEnabled()) return;
+
+		// 防线 1: 忽略所有输入框、文本域与富文本区域，保证正常打字绝不触发涟漪
+		const active = document.activeElement;
+		if (!active) return;
+		const tag = active.tagName;
+		if (tag === 'INPUT' || tag === 'TEXTAREA' || active.isContentEditable) return;
+
+		// 防线 2: 仅在元素匹配 :focus-visible 时响应(即通过 Tab 键盘导航选中的按钮)，彻底避开鼠标点击残留焦点与全局空格切歌
+		if (typeof active.matches === 'function' && !active.matches(':focus-visible')) return;
+
 		const el = findTarget(e);
 		if (!el) return;
 		const r = el.getBoundingClientRect();

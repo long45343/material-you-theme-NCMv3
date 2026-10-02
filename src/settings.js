@@ -115,21 +115,21 @@ class MDSettings extends React.Component {
 								}
 								setSetting('hide-ncm-logo', e.target.checked);
 							}} />
-						<label for="md-hide-ncm-logo" className="md-checkbox-label">隐藏网易云 Logo</label>
-					</div>
-				</>
-				<div className="md-checkbox-wrapper">
-					<input id="md-ripple-effect" type="checkbox" className="md-checkbox" checked={ this.state.rippleEffect } onChange={ (e) => {
-						this.setState({ rippleEffect: e.target.checked });
-						if (e.target.checked) {
-							document.body.classList.add('md-ripple-enabled');
-						} else {
-							document.body.classList.remove('md-ripple-enabled');
-						}
-						setSetting('ripple-effect', e.target.checked);
-					}} />
-					<label for="md-ripple-effect" className="md-checkbox-label">按钮点击涟漪特效 (MD3)</label>
-				</div>
+								<label for="md-hide-ncm-logo" className="md-checkbox-label">隐藏网易云 Logo</label>
+							</div>
+						</>
+						<div className="md-checkbox-wrapper">
+							<input id="md-ripple-effect" type="checkbox" className="md-checkbox" checked={ this.state.rippleEffect } onChange={ (e) => {
+								this.setState({ rippleEffect: e.target.checked });
+								if (e.target.checked) {
+									document.body.classList.add('md-ripple-enabled');
+								} else {
+									document.body.classList.remove('md-ripple-enabled');
+								}
+								setSetting('ripple-effect', e.target.checked);
+							}} />
+							<label htmlFor="md-ripple-effect" className="md-checkbox-label">按钮点击涟漪特效 (MD3)</label>
+						</div>
 					<div className="md-theme-setting-subtitle">其他设置</div>
 					<div className="md-checkbox-wrapper">
 						<input id="md-ignore-now-playing-page" type="checkbox" className="md-checkbox" checked={ this.state.ignoreNowPlaying } onChange={ (e) => {

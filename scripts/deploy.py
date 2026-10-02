@@ -19,3 +19,13 @@ with zipfile.ZipFile(target, 'w', zipfile.ZIP_DEFLATED) as z:
     for f in ('main.js', 'manifest.json', 'Preview.jpg'):
         z.write(os.path.join(dist, f), f)
 print('已部署:', target)
+
+# 同步更新 plugins_runtime 解压运行时，确保无需完全重启网易云、直接 Ctrl+R 即可秒级生效最新代码
+runtime_dir = os.path.join(data_dir, 'plugins_runtime', 'material-u-theme-ncmv3')
+if os.path.exists(runtime_dir):
+    import shutil
+    for f in ('main.js', 'manifest.json', 'Preview.jpg'):
+        src_f = os.path.join(dist, f)
+        if os.path.exists(src_f):
+            shutil.copy2(src_f, os.path.join(runtime_dir, f))
+    print('已同步运行时解压目录:', runtime_dir)
