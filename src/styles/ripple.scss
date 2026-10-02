@@ -1,0 +1,23 @@
+// ripple.scss — MD3 按钮涟漪 (state layer)
+// 宿主 .md-ripple-host 由 ripple.js 注入到按钮内,负责裁剪到按钮圆角范围;
+// .md-ripple 是以点击点为圆心、currentColor 为底的圆形覆层。
+// opacity 常驻 0.14(MD3 pressed state layer),显隐与缩放由 Web Animations API 驱动。
+
+body.material-you-theme .md-ripple-host {
+	position: absolute;
+	inset: 0;
+	overflow: hidden;
+	border-radius: inherit;
+	pointer-events: none;
+}
+
+body.material-you-theme .md-ripple {
+	position: absolute;
+	display: block;
+	border-radius: 50%;
+	background-color: currentColor;
+	opacity: 0.14;
+	pointer-events: none;
+	will-change: transform, opacity;
+	transform: scale(0);
+}

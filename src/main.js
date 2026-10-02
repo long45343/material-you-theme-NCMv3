@@ -11,11 +11,13 @@ import './styles/songplay.scss';
 import './styles/player.scss';
 import './styles/pages.scss';
 import './styles/overrides.scss';
+import './styles/ripple.scss';
 
 import { waitForElement, getSetting, setSetting, makeToast, chunk } from './utils.js';
 import { argb2Rgb, rgb2Hsl } from './color-utils.js';
 import { schemePresets } from './scheme-presets.js';
 import { initSettingMenu } from './settings.js';
+import { setupRipple } from './ripple.js';
 import { themeFromSourceColor, QuantizerCelebi, Hct, Score, SchemeExpressive, SchemeVibrant, SchemeMonochrome, SchemeFidelity, SchemeTonalSpot, SchemeNeutral, MaterialDynamicColors } from '@material/material-color-utilities';
 import { buildTokenCSS, rgba, mix as mixRgb, foregroundOf, FOREGROUND_ALPHA } from './theme-tokens.js';
 
@@ -654,6 +656,7 @@ const refreshThemeWithCurrentMode = () => {
 		addOrRemoveGlobalClassByOption('ignore-now-playing', getSetting('ignore-now-playing-page', false));
 		addOrRemoveGlobalClassByOption('md-disable-comment-style', getSetting('disable-comment-style', false));
 		addOrRemoveGlobalClassByOption('hide-ncm-logo', getSetting('hide-ncm-logo', false));
+		addOrRemoveGlobalClassByOption('md-ripple-enabled', getSetting('ripple-effect', true));
 
 		// 动态模式下优先读取磁盘缓存色
 		if (savedScheme.startsWith('dynamic-')) {
@@ -1017,6 +1020,7 @@ const boot = () => {
 	setInterval(updateGreeting, 30000);
 
 	hookChannelMenus(); // 菜单染色(D8):尽早挂,晚于 applyScheme 以取到主色
+	setupRipple(); // MD3 按钮点击涟漪特效
 		setupCoverWatcher();
 		setupSongplayWatcher(); // Q1: 播放页挂载/更新守卫
 		setupAPBWatcher(); // 兼容 APB: 动态状态监听与 body.apb-active 标记同步
