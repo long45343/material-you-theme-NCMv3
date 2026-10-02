@@ -1,0 +1,96 @@
+// comments.scss — 全客户端评论区 MD3 化与原生开关重置体系
+// 忠实原项目 (solstice23/material-you-theme-netease) 的 comments 规范:
+// 1. 未禁用时: 播放页与普通详情页统一栅格卡片化 (auto-fill minmax(450px, 1fr)), 主色5%底 + 9px圆角 + hover 12%
+// 2. 禁用时: 显式重置为纯净官方原生透明列表，彻底杜绝任何外部卡片背景或阴影污染
+
+// ---- 1. 未开启禁用评论区样式时：全站应用 MD3 栅格卡片规范 ----
+body.material-you-theme:not(.md-disable-comment-style) {
+	[class*="CommentAreaContainer_"] {
+		// 分区标题 18px 统一规范
+		[class*="comment-count"] {
+			font-size: 18px !important;
+			font-weight: normal !important;
+			margin-top: 10px;
+			margin-bottom: 20px;
+		}
+
+		// 原项目卡片栅格排布配方
+		ul[class*="cmd-list-items"] {
+			display: grid !important;
+			grid-template-columns: repeat(auto-fill, minmax(450px, 1fr)) !important;
+			gap: 15px !important;
+			font-size: 14px !important;
+		}
+
+		// 单条评论卡片: 主色 5% 淡底 + 9px 圆角 + hover 主色 12% 微过渡
+		[class*="CommentCardWrapper_"] {
+			background: rgba(var(--md-accent-color-rgb), 0.05) !important;
+			border-radius: 9px !important;
+			padding: 20px 15px !important;
+			border: none !important;
+			box-sizing: border-box;
+
+			// Q6 性能决议: 仅在 hover 状态启用过渡，防止方案切换时大面积并发重绘
+			&:hover {
+				background: rgba(var(--md-accent-color-rgb), 0.12) !important;
+				transition: background-color 0.2s ease;
+			}
+		}
+	}
+
+	// 播放页(#page_pc_songplay / #vinyl-page-container)专有对比度与舞台令牌绑定
+	#page_pc_songplay,
+	#vinyl-page-container {
+		[class*="CommentAreaContainer_"] {
+			background: var(--md-stage-bg) !important;
+			color: var(--md-stage-fg) !important;
+
+			[class*="comment-count"],
+			[class*="comment-content"] {
+				color: var(--md-stage-fg) !important;
+			}
+
+			.comment-operation,
+			.comment-operation .cmd-icon {
+				color: var(--md-stage-fg-muted) !important;
+			}
+
+			// 歌曲信息胶囊
+			[class*="TrackInfoContainer_"] {
+				background: var(--md-stage-surface) !important;
+				color: var(--md-stage-fg) !important;
+			}
+
+			// 发布评论按钮
+			button[class*="cmd-button"] {
+				background: var(--md-stage-surface) !important;
+				color: var(--md-stage-fg) !important;
+			}
+		}
+	}
+}
+
+// ---- 2. 开启“禁用评论区样式”时：全站防御性显式重置为纯净官方原生 ----
+body.material-you-theme.md-disable-comment-style {
+	[class*="CommentAreaContainer_"] {
+		background: transparent !important;
+		color: inherit !important;
+
+		ul[class*="cmd-list-items"] {
+			display: block !important;
+			grid-template-columns: none !important;
+			gap: 0 !important;
+		}
+
+		[class*="CommentCardWrapper_"] {
+			background: transparent !important;
+			border-radius: 0 !important;
+			box-shadow: none !important;
+
+			&:hover {
+				background: transparent !important;
+				box-shadow: none !important;
+			}
+		}
+	}
+}

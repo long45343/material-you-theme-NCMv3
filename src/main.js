@@ -8,6 +8,7 @@ import './styles/app-shell.scss';
 import './styles/nav.scss';
 import './styles/maintab.scss';
 import './styles/songplay.scss';
+import './styles/comments.scss';
 import './styles/player.scss';
 import './styles/pages.scss';
 import './styles/overrides.scss';
@@ -471,7 +472,7 @@ const refreshTheme = () => {
 			}
 
 
-	applyNativeAppearance(colors.primary);
+		applyNativeAppearance(colors.primary, mode);
 
 	// E1 二期:阶段耗时打点(内存累积,recon meta.json 转储;上线后可移除)
 	const __w = (window.__mdStageStats ??= []);
@@ -479,20 +480,41 @@ const refreshTheme = () => {
 	if (__w.length > 24) __w.shift();
 };
 
-// ---------------------------------------------------------------- 原生外观联动(D3=实验开关)
+// ---------------------------------------------------------------- 原生外观联动(支持 dark.skin 与 common.skin 切换)
 // Spike S2 实测:channel.call('app.loadSkinPackets', cb, [type, name, extra]),
-// 网易云启动时自调 ("common","common",{btn_color:{h,s,l}}),btn_color 为 HSL(h 0-360, s/l 0-100)。
+// 网易云原生通过 name = 'dark' 加载 dark.skin (暗色右键菜单/托盘)，name = 'common' 加载 common.skin (亮色)
+// extra.btn_color 为 HSL(h 0-360, s/l 0-100)。
 let lastNativeColorKey = '';
-const applyNativeAppearance = (primary) => {
-	if (getSetting('native-skin-link', false) !== true) return;
+const applyNativeAppearance = (primary, mode) => {
+	// 若用户在设置中关闭了悬浮菜单/托盘按钮染色，则不干涉原生层外观
+	if (getSetting('menu-coloring', true) !== true) return;
+
 	try {
-		const key = primary.join(',');
-		if (key === lastNativeColorKey) return; // 去重,防止与网易云自身更新形成循环
+		const isDark = mode ? (mode === 'dark') : (window.mdThemeType === 'dark');
+		const skinName = isDark ? 'dark' : 'common';
+		const colorKey = primary ? primary.join(',') : 'default';
+		const key = `${skinName}:${colorKey}`;
+		if (key === lastNativeColorKey) return; // 去重，防止与网易云自身更新形成循环
 		lastNativeColorKey = key;
-		const [h, s, l] = rgb2Hsl(primary);
-		channel.call('app.loadSkinPackets', () => {}, ['common', 'common', {
-			btn_color: { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) }
-		}]);
+
+		// 同步网易云官方 theme 状态，确保官方前端组装菜单项图标与文字色时对齐暗色
+		try {
+			localStorage.setItem('currentTheme', isDark ? 'dark' : 'light');
+		} catch (e) {}
+
+		// 计算按钮强调色 HSL
+		const [h, s, l] = primary ? rgb2Hsl(primary) : [0, 0, 0.5];
+		const extra = {
+			btn_color: {
+				h: Math.round(h * 360),
+				s: Math.round(s * 100),
+				l: Math.round(l * 100)
+			}
+		};
+
+		if (window.channel && typeof channel.call === 'function') {
+			channel.call('app.loadSkinPackets', () => {}, ['common', skinName, extra]);
+		}
 	} catch (e) { /* 原生接口失败静默跳过 */ }
 };
 

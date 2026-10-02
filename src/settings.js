@@ -11,9 +11,8 @@ class MDSettings extends React.Component {
 			ignoreNowPlaying: false,
 			hideNCMLogo: false,
 			hideNCMTitle: false,
-			disableCommentStyle: false,
-			nativeSkinLink: false,
-			menuColoring: true,
+				disableCommentStyle: false,
+				menuColoring: true,
 			rippleEffect: true,
 			customPreset: JSON.parse(getSetting('custom-scheme', JSON.stringify({
 				'primary': [189, 230, 251],
@@ -33,9 +32,8 @@ class MDSettings extends React.Component {
 			ignoreNowPlaying: getSetting('ignore-now-playing-page', false),
 			hideNCMLogo: getSetting('hide-ncm-logo', false),
 			hideNCMTitle: getSetting('hide-ncm-title', false),
-			disableCommentStyle: getSetting('disable-comment-style', false),
-			nativeSkinLink: getSetting('native-skin-link', false),
-			menuColoring: getSetting('menu-coloring', true),
+				disableCommentStyle: getSetting('disable-comment-style', false),
+				menuColoring: getSetting('menu-coloring', true),
 			rippleEffect: getSetting('ripple-effect', true),
 		});
 	}
@@ -159,27 +157,19 @@ class MDSettings extends React.Component {
 						}} />
 						<label for="md-ignore-now-playing-page" className="md-checkbox-label">在正在播放页面中不应用主题</label>
 					</div>
-					<div className="md-checkbox-wrapper">
-						<input id="md-disable-comment-style" type="checkbox" className="md-checkbox" checked={ this.state.disableCommentStyle } onChange={ (e) => {
-							this.setState({ disableCommentStyle: e.target.checked });
-							if (e.target.checked) {
-								document.body.classList.add('md-disable-comment-style');
-							} else {
-								document.body.classList.remove('md-disable-comment-style');
-							}
-							setSetting('disable-comment-style', e.target.checked);
-						}} />
-						<label for="md-disable-comment-style" className="md-checkbox-label">禁用评论区样式</label>
-					</div>
-					<div className="md-checkbox-wrapper">
-						<input id="md-native-skin-link" type="checkbox" className="md-checkbox" checked={ this.state.nativeSkinLink } onChange={ (e) => {
-							this.setState({ nativeSkinLink: e.target.checked });
-							setSetting('native-skin-link', e.target.checked);
-							window.location.reload();
-						}} />
-						<label for="md-native-skin-link" className="md-checkbox-label">实验性:原生皮肤联动(重启生效)</label>
-					</div>
-					<div className="md-checkbox-wrapper">
+						<div className="md-checkbox-wrapper">
+							<input id="md-disable-comment-style" type="checkbox" className="md-checkbox" checked={ this.state.disableCommentStyle } onChange={ (e) => {
+								this.setState({ disableCommentStyle: e.target.checked });
+								if (e.target.checked) {
+									document.body.classList.add('md-disable-comment-style');
+								} else {
+									document.body.classList.remove('md-disable-comment-style');
+								}
+								setSetting('disable-comment-style', e.target.checked);
+							}} />
+							<label for="md-disable-comment-style" className="md-checkbox-label">禁用评论区样式</label>
+						</div>
+						<div className="md-checkbox-wrapper">
 						<input id="md-menu-coloring" type="checkbox" className="md-checkbox" checked={ this.state.menuColoring } onChange={ (e) => {
 							this.setState({ menuColoring: e.target.checked });
 							setSetting('menu-coloring', e.target.checked);
