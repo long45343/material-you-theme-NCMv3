@@ -656,6 +656,7 @@ const refreshThemeWithCurrentMode = () => {
 		addOrRemoveGlobalClassByOption('ignore-now-playing', getSetting('ignore-now-playing-page', false));
 		addOrRemoveGlobalClassByOption('md-disable-comment-style', getSetting('disable-comment-style', false));
 		addOrRemoveGlobalClassByOption('hide-ncm-logo', getSetting('hide-ncm-logo', false));
+		addOrRemoveGlobalClassByOption('hide-ncm-title', getSetting('hide-ncm-title', false));
 		addOrRemoveGlobalClassByOption('md-ripple-enabled', getSetting('ripple-effect', true));
 
 		// 动态模式下优先读取磁盘缓存色

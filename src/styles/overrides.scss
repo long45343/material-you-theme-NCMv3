@@ -52,6 +52,17 @@ body.material-you-theme.hide-ncm-logo {
 	}
 }
 
+// 同时隐藏标题(网易云词标): "隐藏网易云 Logo"的子选项, 双类名同时命中才生效, Logo 关闭时标题自动恢复
+body.material-you-theme.hide-ncm-logo.hide-ncm-title {
+	#page_pc_main_tab .cmd-icon-title {
+		display: none !important;
+	}
+	// Logo 与词标都隐藏后, 顶部只剩 72px 高的整条空白头(BackContainer 内仅装这两者), 一并收掉让内容上移
+	#page_pc_main_tab [class*="BackContainer_"] {
+		display: none !important;
+	}
+}
+
 // 自绘 toast
 .md-toast {
 	position: fixed;

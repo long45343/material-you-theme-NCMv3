@@ -326,6 +326,15 @@ body.ignore-now-playing.mq-playing {
 	}
 }
 
+// 二级子选项(从属于上一项开关): 缩进 + 弱化字号
+.md-checkbox-wrapper.md-sub-option {
+	padding-left: 26px;
+	margin-top: -8px;
+	.md-checkbox-label {
+		font-size: 14px;
+	}
+}
+
 
 .md-color-field {
     display: flex;

@@ -10,6 +10,7 @@ class MDSettings extends React.Component {
 			scheme: 'dynamic-auto',
 			ignoreNowPlaying: false,
 			hideNCMLogo: false,
+			hideNCMTitle: false,
 			disableCommentStyle: false,
 			nativeSkinLink: false,
 			menuColoring: true,
@@ -31,6 +32,7 @@ class MDSettings extends React.Component {
 			scheme: getSetting('scheme', 'dynamic-default-auto'),
 			ignoreNowPlaying: getSetting('ignore-now-playing-page', false),
 			hideNCMLogo: getSetting('hide-ncm-logo', false),
+			hideNCMTitle: getSetting('hide-ncm-title', false),
 			disableCommentStyle: getSetting('disable-comment-style', false),
 			nativeSkinLink: getSetting('native-skin-link', false),
 			menuColoring: getSetting('menu-coloring', true),
@@ -115,8 +117,22 @@ class MDSettings extends React.Component {
 								}
 								setSetting('hide-ncm-logo', e.target.checked);
 							}} />
-								<label for="md-hide-ncm-logo" className="md-checkbox-label">隐藏网易云 Logo</label>
+							<label for="md-hide-ncm-logo" className="md-checkbox-label">隐藏网易云 Logo</label>
+						</div>
+						{ this.state.hideNCMLogo ? (
+							<div className="md-checkbox-wrapper md-sub-option">
+								<input id="md-hide-ncm-title" type="checkbox" className="md-checkbox" checked={ this.state.hideNCMTitle } onChange={ (e) => {
+									this.setState({ hideNCMTitle: e.target.checked });
+									if (e.target.checked) {
+										document.body.classList.add('hide-ncm-title');
+									} else {
+										document.body.classList.remove('hide-ncm-title');
+									}
+									setSetting('hide-ncm-title', e.target.checked);
+								}} />
+								<label htmlFor="md-hide-ncm-title" className="md-checkbox-label">同时隐藏标题</label>
 							</div>
+						) : null }
 						</>
 						<div className="md-checkbox-wrapper">
 							<input id="md-ripple-effect" type="checkbox" className="md-checkbox" checked={ this.state.rippleEffect } onChange={ (e) => {
