@@ -196,3 +196,20 @@ body.material-you-theme:not(.apb-active) {
 		visibility: hidden !important;
 	}
 }
+
+// 5. 音量调节弹出浮层 MD3 规范化 (兼容所有模式与 APB)
+body.material-you-theme {
+	[class*="volumnTooltipCss_"] {
+		background: var(--colorFunction15) !important;
+		border-radius: 12px !important;
+		box-shadow: var(--md-elev-2) !important;
+
+		&::before {
+			box-shadow: none !important;
+		}
+
+		.cmd-tooltip-icon-arrow {
+			fill: var(--colorFunction15) !important;
+		}
+	}
+}

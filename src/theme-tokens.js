@@ -118,7 +118,7 @@ export const buildTokenCSS = (scheme, mode) => {
 	out.push(`--colorFunction12: ${rgba(mix(primary, [255, 0, 60], 0.12), 1)} !important;`);
 	out.push(`--colorFunction13: rgba(50,119,255,1) !important;`);
 	out.push(`--colorFunction14: rgba(119,88,255,1) !important;`);
-	out.push(`--colorFunction15: ${rgba(white, 1)} !important;`);
+		out.push(`--colorFunction15: ${rgba(dark ? surface : white, 1)} !important;`);
 	out.push(`--colorFunction16: ${rgba(dark ? bgDarken : [45, 45, 56], 1)} !important;`);
 	out.push(`--colorFunction17: ${rgba(dark ? mix(bg, [255, 255, 255], 0.04) : [250, 250, 250], 1)} !important;`);
 
