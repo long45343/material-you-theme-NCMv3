@@ -14,7 +14,7 @@ import './styles/pages.scss';
 import './styles/overrides.scss';
 import './styles/ripple.scss';
 
-import { waitForElement, getSetting, setSetting, makeToast, chunk } from './utils.js';
+import { waitForElement, getSetting, setSetting, makeToast, chunk, loadSettingsFromDisk } from './utils.js';
 import { argb2Rgb, rgb2Hsl } from './color-utils.js';
 import { schemePresets } from './scheme-presets.js';
 import { initSettingMenu } from './settings.js';
@@ -41,12 +41,6 @@ try {
 		}
 	}
 } catch (e) {}
-
-const migrateSettings = () => {
-	if (getSetting('scheme') == 'dynamic-auto') {
-		setSetting('scheme', 'dynamic-default-auto');
-	}
-}
 
 // ---------------------------------------------------------------- 状态
 window.mdScheme = null;          // 当前方案名
@@ -79,8 +73,6 @@ try {
 window.mdCoverDominantColor = null;   // 封面主色 (ARGB)
 window.mdBGEnhancedDominantColor = null; // 播放页背景主色 (ARGB)
 window.mdActivePreset = null;    // 非动态方案时激活的预设
-
-migrateSettings();
 
 // ---------------------------------------------------------------- 样式控制器
 const addOrRemoveGlobalClassByOption = (className, optionValue) => {
@@ -589,14 +581,15 @@ export const applyScheme = (scheme) => {
 		document.body.classList.add('md-dynamic-theme');
 		const mode = scheme.split('-').slice(-1)[0];
 		document.body.classList.add(`md-dynamic-theme-${mode}`);
-		if (mode != 'auto') {
-			setThemeType(mode);
-		} else {
-			// auto:交由 probeAndWatchAppThemeMode 判定
-			refreshThemeWithCurrentMode();
+			if (mode != 'auto') {
+				setThemeType(mode);
+			} else {
+				// auto:交由 probeAndWatchAppThemeMode 判定
+				refreshThemeWithCurrentMode();
+			}
+			saveThemeCacheToFile(true);
+			return;
 		}
-		return;
-	}
 	document.body.classList.remove('md-dynamic-theme');
 
 	let preset;
@@ -643,113 +636,124 @@ const refreshThemeWithCurrentMode = () => {
 	}
 };
 
-	// 优先异步尝试从 BETTERNCM_PROFILE/material-you-theme-cache.json 读取上次缓存的主题色
-	// 注意：该逻辑仅应在动态取色状态下生效；如果用户采用静态配色，则无视该逻辑。
-	const tryLoadThemeCache = async () => {
-		const currentScheme = getSetting('scheme', 'dynamic-default-auto');
-		if (!currentScheme.startsWith('dynamic-')) {
-			// 静态配色无视缓存文件
-			return false;
-		}
-		if (typeof fetch === 'undefined' || typeof BETTERNCM_API_PATH === 'undefined') return false;
-		try {
-			const res = await fetch(BETTERNCM_API_PATH + '/fs/read_file_text?path=' + encodeURIComponent('material-you-theme-cache.json'), {
-				headers: { 'BETTERNCM_API_KEY': BETTERNCM_API_KEY }
-			});
-			if (!res.ok) return false;
-			const text = await res.text();
-			if (!text) return false;
-			const data = JSON.parse(text);
-			if (data && typeof data.color === 'number' && Number.isFinite(data.color)) {
-				// 成功读取到文件中的主题色
-				window.mdCoverDominantColor = data.color;
-				refreshTheme();
-				return true;
+		// 优先异步尝试从 BETTERNCM_PROFILE/material-you-theme-cache.json 读取上次缓存的主题色
+		// 注意：该逻辑仅应在动态取色状态下生效；如果用户采用静态配色，则无视该逻辑。
+		let lastSavedColor = null;
+		let lastSavedScheme = null;
+		let saveColorTimer = null;
+		const tryLoadThemeCache = async () => {
+			const currentScheme = getSetting('scheme', 'dynamic-default-auto');
+			if (!currentScheme.startsWith('dynamic')) {
+				// 静态配色无视缓存文件
+				return false;
 			}
-		} catch (e) {
-			// 读取异常直接静默走常规兜底
+			if (typeof fetch === 'undefined' || typeof BETTERNCM_API_PATH === 'undefined') return false;
+			try {
+				const res = await fetch(BETTERNCM_API_PATH + '/fs/read_file_text?path=' + encodeURIComponent('material-you-theme-cache.json'), {
+					headers: { 'BETTERNCM_API_KEY': BETTERNCM_API_KEY }
+				});
+				if (!res.ok) return false;
+				const text = await res.text();
+				if (!text) return false;
+				const data = JSON.parse(text);
+				if (data && typeof data.color === 'number' && Number.isFinite(data.color)) {
+					// 成功读取到文件中的主题色
+					window.mdCoverDominantColor = data.color;
+					lastSavedColor = data.color;
+					lastSavedScheme = window.mdScheme;
+					refreshTheme();
+					return true;
+				}
+			} catch (e) {
+				// 读取异常直接静默走常规兜底
+			}
+			return false;
+		};
+
+		const initSettings = async () => {
+			await loadSettingsFromDisk();
+			let savedScheme = getSetting('scheme', 'dynamic-default-auto');
+			if (savedScheme === 'dynamic-auto') {
+				savedScheme = 'dynamic-default-auto';
+				setSetting('scheme', savedScheme);
+			}
+			applyScheme(savedScheme);
+			addOrRemoveGlobalClassByOption('ignore-now-playing', getSetting('ignore-now-playing-page', false));
+			addOrRemoveGlobalClassByOption('md-disable-comment-style', getSetting('disable-comment-style', false));
+			addOrRemoveGlobalClassByOption('hide-ncm-logo', getSetting('hide-ncm-logo', false));
+			addOrRemoveGlobalClassByOption('hide-ncm-title', getSetting('hide-ncm-title', false));
+			addOrRemoveGlobalClassByOption('md-ripple-enabled', getSetting('ripple-effect', true));
+
+			// 动态模式下优先读取磁盘缓存色
+			if (savedScheme.startsWith('dynamic')) {
+				tryLoadThemeCache();
+			}
 		}
-		return false;
+
+	// ---------------------------------------------------------------- 取色源(3.1 多候选链)
+	const COVER_CANDIDATES = [
+		'#page_pc_mini_bar img',
+		'#VINYL_COVER_ELEMENT_ID img',
+		'.cover-container-rotate img',
+		'.cover-area img',
+		'.TrackInfoContainer img',
+	];
+	const isUsableCover = (img) => {
+		if (!img || !img.src) return false;
+		if (!(img.src.startsWith('http') || img.src.startsWith('orpheus://cache'))) return false;
+		const rect = img.getBoundingClientRect();
+		return rect.width > 24 && rect.height > 24;
+	};
+	const getCoverElement = () => {
+		for (const sel of COVER_CANDIDATES) {
+			for (const img of document.querySelectorAll(sel)) {
+				if (isUsableCover(img)) return img;
+			}
+		}
+		return null;
 	};
 
-	const initSettings = () => {
-		const savedScheme = getSetting('scheme', 'dynamic-default-auto');
-		applyScheme(savedScheme);
-		addOrRemoveGlobalClassByOption('ignore-now-playing', getSetting('ignore-now-playing-page', false));
-		addOrRemoveGlobalClassByOption('md-disable-comment-style', getSetting('disable-comment-style', false));
-		addOrRemoveGlobalClassByOption('hide-ncm-logo', getSetting('hide-ncm-logo', false));
-		addOrRemoveGlobalClassByOption('hide-ncm-title', getSetting('hide-ncm-title', false));
-		addOrRemoveGlobalClassByOption('md-ripple-enabled', getSetting('ripple-effect', true));
+	// ---------------------------------------------------------------- 主题色磁盘持久化 (仅动态取色生效)
+	// 写入 BETTERNCM_PROFILE/material-you-theme-cache.json
+	const saveThemeCacheToFile = (force = false) => {
+		// 仅在动态取色模式下生效；若用户采用静态配色，则完全无视该逻辑
+		if (!window.mdScheme || !window.mdScheme.startsWith('dynamic')) return;
+		const color = window.mdCoverDominantColor;
+		if (!color || typeof color !== 'number') return;
+		if (!force && color === lastSavedColor && window.mdScheme === lastSavedScheme) return;
 
-		// 动态模式下优先读取磁盘缓存色
-		if (savedScheme.startsWith('dynamic-')) {
-			tryLoadThemeCache();
-		}
-	}
+		const doWrite = () => {
+			lastSavedColor = color;
+			lastSavedScheme = window.mdScheme;
+			if (typeof fetch !== 'undefined' && typeof BETTERNCM_API_PATH !== 'undefined') {
+				const payload = JSON.stringify({
+					color: color,
+					scheme: window.mdScheme,
+					time: Date.now()
+				});
+				fetch(BETTERNCM_API_PATH + '/fs/write_file_text?path=' + encodeURIComponent('material-you-theme-cache.json'), {
+					method: 'POST',
+					headers: { 'BETTERNCM_API_KEY': BETTERNCM_API_KEY, 'Content-Type': 'text/plain' },
+					body: payload
+				}).catch(() => {});
+			}
+		};
 
-// ---------------------------------------------------------------- 取色源(3.1 多候选链)
-const COVER_CANDIDATES = [
-	'#page_pc_mini_bar img',
-	'#VINYL_COVER_ELEMENT_ID img',
-	'.cover-container-rotate img',
-	'.cover-area img',
-	'.TrackInfoContainer img',
-];
-const isUsableCover = (img) => {
-	if (!img || !img.src) return false;
-	if (!(img.src.startsWith('http') || img.src.startsWith('orpheus://cache'))) return false;
-	const rect = img.getBoundingClientRect();
-	return rect.width > 24 && rect.height > 24;
-};
-const getCoverElement = () => {
-	for (const sel of COVER_CANDIDATES) {
-		for (const img of document.querySelectorAll(sel)) {
-			if (isUsableCover(img)) return img;
-		}
-	}
-	return null;
-};
-
-// ---------------------------------------------------------------- 主题色磁盘持久化 (仅动态取色生效)
-// 写入 BETTERNCM_PROFILE/material-you-theme-cache.json
-let lastSavedColor = null;
-let saveColorTimer = null;
-const saveThemeCacheToFile = (force = false) => {
-	// 仅在动态取色模式下生效；若用户采用静态配色，则完全无视该逻辑
-	if (!window.mdScheme || !window.mdScheme.startsWith('dynamic-')) return;
-	const color = window.mdCoverDominantColor;
-	if (!color || typeof color !== 'number') return;
-	if (!force && color === lastSavedColor) return;
-
-	const doWrite = () => {
-		lastSavedColor = color;
-		if (typeof fetch !== 'undefined' && typeof BETTERNCM_API_PATH !== 'undefined') {
-			const payload = JSON.stringify({
-				color: color,
-				scheme: window.mdScheme,
-				time: Date.now()
-			});
-			fetch(BETTERNCM_API_PATH + '/fs/write_file_text?path=' + encodeURIComponent('material-you-theme-cache.json'), {
-				method: 'POST',
-				headers: { 'BETTERNCM_API_KEY': BETTERNCM_API_KEY, 'Content-Type': 'text/plain' },
-				body: payload
-			}).catch(() => {});
+		if (force) {
+			clearTimeout(saveColorTimer);
+			doWrite();
+		} else {
+			clearTimeout(saveColorTimer);
+			saveColorTimer = setTimeout(doWrite, 1000); // 1s 防抖，避开热路径
 		}
 	};
 
-	if (force) {
-		doWrite();
-	} else {
-		clearTimeout(saveColorTimer);
-		saveColorTimer = setTimeout(doWrite, 1000); // 1s 防抖，避开热路径
-	}
-};
-
-// 页面隐藏/卸载/关闭时立即强制落盘一次
-window.addEventListener('pagehide', () => saveThemeCacheToFile(true));
-window.addEventListener('beforeunload', () => saveThemeCacheToFile(true));
+	// 页面隐藏/卸载/关闭时立即强制落盘一次
+	window.addEventListener('pagehide', () => saveThemeCacheToFile(true));
+	window.addEventListener('beforeunload', () => saveThemeCacheToFile(true));
 
 const updateDynamicColorFromCover = (img) => {
+	if (window.mdScheme && !window.mdScheme.startsWith('dynamic')) return;
 	const canvas = document.createElement('canvas');
 	canvas.width = 48;
 	canvas.height = 48;
@@ -822,6 +826,7 @@ const updateDynamicColorFromCover = (img) => {
 
 	let lastCoverSrc = '';
 	const scanCover = () => {
+		if (window.mdScheme && !window.mdScheme.startsWith('dynamic')) return;
 		const img = getCoverElement();
 		if (!img) return;
 		if (img.src === lastCoverSrc) return;
@@ -1037,8 +1042,8 @@ const updateGreeting = () => {
 }
 
 // ---------------------------------------------------------------- 启动
-const boot = () => {
-	try { initSettings(); } catch (e) { console.error('MD3 initSettings', e); }
+	const boot = async () => {
+		try { await initSettings(); } catch (e) { console.error('MD3 initSettings', e); }
 	updateGreeting();
 	setInterval(updateGreeting, 30000);
 
