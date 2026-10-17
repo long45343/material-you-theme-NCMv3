@@ -14,8 +14,9 @@ import './styles/pages.scss';
 import './styles/overrides.scss';
 import './styles/ripple.scss';
 
-import { waitForElement, getSetting, setSetting, makeToast, chunk, loadSettingsFromDisk } from './utils.js';
-import { argb2Rgb, rgb2Hsl } from './color-utils.js';
+import { waitForElement, getSetting, setSetting, makeToast, loadSettingsFromDisk } from './utils.js';
+import { argb2Rgb, rgb2Hsl, rgbaToArgb } from './color-utils.js';
+import { watchDOMTargets } from './dom-watchers.js';
 import { schemePresets } from './scheme-presets.js';
 import { initSettingMenu } from './settings.js';
 import { setupRipple } from './ripple.js';
@@ -83,14 +84,20 @@ const addOrRemoveGlobalClassByOption = (className, optionValue) => {
 	}
 }
 
+const setStyleProperty = (style, name, value, priority = '') => {
+	if (style.getPropertyValue(name) !== value || style.getPropertyPriority(name) !== priority) {
+		style.setProperty(name, value, priority);
+	}
+};
+
 const updateAccentColor = ([r, g, b], name = '') => {
 	if (name == '' || name == 'primary') {
 		name = '--md-accent-color';
 	} else {
 		name = '--md-accent-color-' + name;
 	}
-	document.body.style.setProperty(name, `rgb(${r}, ${g}, ${b})`);
-	document.body.style.setProperty(name + '-rgb', `${r}, ${g}, ${b}`);
+	setStyleProperty(document.body.style, name, `rgb(${r}, ${g}, ${b})`);
+	setStyleProperty(document.body.style, name + '-rgb', `${r}, ${g}, ${b}`);
 }
 
 // 3.1 全局令牌覆盖层(心脏:见 theme-tokens.js)
@@ -136,22 +143,25 @@ export const getDynamicThemeColor = () => {
 		return (color[0] << 16 >>> 0) | (color[1] << 8 >>> 0) | color[2];
 	}
 }
-// E2:引擎结果缓存 —— 键 = 取色源解析出的颜色 + 方案名。
-// 换歌/取色源切换/自定义改色都会改变解析色 → 键自然失效,无需手动清理。
+// 同一配色族一次生成亮暗两套变量,模式后缀不参与缓存。
 const themeCSSCache = new Map();
 export const getThemeCSSFromColor = (schemeName = null) => {
+	const scheme = (schemeName || window.mdScheme || 'dynamic-default-auto').replace(/-(light|dark|auto)$/, '');
 	const color = getDynamicThemeColor();
-	if (!color) {
+	if (color == null) {
 		return defaultDynamicColor;
 	}
-	const cacheKey = String(color) + '|' + (schemeName ?? '');
+	const cacheKey = String(color) + '|' + scheme;
 	if (themeCSSCache.has(cacheKey)) {
-		return themeCSSCache.get(cacheKey);
+		const result = themeCSSCache.get(cacheKey);
+		themeCSSCache.delete(cacheKey);
+		themeCSSCache.set(cacheKey, result);
+		return result;
 	}
-	const result = computeThemeCSSFromColor(color, schemeName);
+	const result = computeThemeCSSFromColor(color, scheme);
 	if (result) {
 		themeCSSCache.set(cacheKey, result);
-		if (themeCSSCache.size > 40) themeCSSCache.clear();
+		if (themeCSSCache.size > 40) themeCSSCache.delete(themeCSSCache.keys().next().value);
 	}
 	return result;
 };
@@ -227,7 +237,8 @@ export const updateDynamicTheme = () => {
 	for (const [key, value] of Object.entries(CSSItems)) {
 		CSS += `${key}: ${value};`;
 	}
-	dynamicColorController.innerHTML = `:root {${CSS}}`;
+	const cssText = `:root {${CSS}}`;
+	if (dynamicColorController.textContent !== cssText) dynamicColorController.textContent = cssText;
 };
 
 // ---------------------------------------------------------------- 主题刷新(令牌层 + 强调色变量)
@@ -286,29 +297,20 @@ const isAPBActive = () => {
 
 // APB 运行时监听与 body.apb-active 类名动态同步
 const setupAPBWatcher = () => {
-	let timer = null;
 	const sync = () => {
 		const active = isAPBActive();
-		if (document.body && document.body.classList.contains('apb-active') !== active) {
+		if (document.body.classList.contains('apb-active') !== active) {
 			document.body.classList.toggle('apb-active', active);
 		}
 	};
-	sync();
-
-	// 监听 head 中 apb-style 样式的插入/移除
+	watchDOMTargets('.apb-blur-host', sync);
+	new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ['class'] });
 	if (document.head) {
-		new MutationObserver(sync).observe(document.head, { childList: true });
+		new MutationObserver((records) => {
+			if (records.some((record) => [...record.addedNodes, ...record.removedNodes].some((node) => node.id === 'apb-style'))) sync();
+		}).observe(document.head, { childList: true });
 	}
-
-	// 监听 body 中类名变动 (捕获 .apb-blur-host 宿主类注入)
-	if (document.body) {
-		new MutationObserver(() => {
-			clearTimeout(timer);
-			timer = setTimeout(sync, 100);
-		}).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
-	}
-
-	// 定时同步兜底 (应对 APB 异步挂载与状态切换)
+	// APB 的 JS 状态不一定伴随 DOM 变化。
 	setInterval(sync, 1500);
 };
 
@@ -318,56 +320,51 @@ const setupAPBWatcher = () => {
 // 在暗色模式下, --colorWhite* 保持浅色/纯白, --colorBlack* 覆写为浅色前景。
 let currentSongplayFg = null;
 const applySongplayInlineTokens = (fg) => {
-	if (isRNPActive()) return; // 冲突点3实施: RNP完全接管播放页，跳过对原生播放页的内联样式覆写
 	if (fg) currentSongplayFg = fg;
-	if (!currentSongplayFg) return;
+	if (isRNPActive() || !currentSongplayFg) return;
 	const isDark = window.mdThemeType === 'dark';
-	const targets = [
-		document.querySelector('#page_pc_songplay'),
-		document.querySelector('#vinyl-page-container'),
-		document.querySelector('[class*="VinylPageContainer_"]'),
-	].filter(Boolean);
-
-	if (targets.length === 0) return;
+	const targets = document.querySelectorAll('#page_pc_songplay, #vinyl-page-container, [class*="VinylPageContainer_"]');
 
 	targets.forEach((el) => {
 		FOREGROUND_ALPHA.forEach((alpha, idx) => {
 			const fgVal = rgba(currentSongplayFg, alpha);
-			// 播放页内不论消费 --colorBlack 还是 --colorWhite 均保证对比度
-			el.style.setProperty(`--colorBlack${idx + 1}`, fgVal);
-			if (!isDark) {
-				// 亮色模式下: 颠覆网易云把 --colorWhite* 写死为白色的逻辑, 写入深色前景
-				el.style.setProperty(`--colorWhite${idx + 1}`, fgVal);
-			} else {
-				// 暗色模式下: 恢复标准纯白透明度
-				el.style.setProperty(`--colorWhite${idx + 1}`, rgba([255, 255, 255], alpha));
-			}
+			setStyleProperty(el.style, `--colorBlack${idx + 1}`, fgVal);
+			setStyleProperty(el.style, `--colorWhite${idx + 1}`, isDark ? rgba([255, 255, 255], alpha) : fgVal);
 		});
 	});
 };
 
 const setupSongplayWatcher = () => {
 	let timer = null;
-	const check = () => {
-		if (isRNPActive()) return; // 冲突点3实施: 挂起空转监听，完全由 RNP 接管正在播放页
-		const page = document.querySelector('#page_pc_songplay') || document.querySelector('#vinyl-page-container');
-		if (page && currentSongplayFg) {
-			const isDark = window.mdThemeType === 'dark';
-			const firstWhiteVal = page.style.getPropertyValue('--colorWhite1');
-			const targetWhiteVal = isDark ? rgba([255, 255, 255], FOREGROUND_ALPHA[0]) : rgba(currentSongplayFg, FOREGROUND_ALPHA[0]);
-			if (firstWhiteVal !== targetWhiteVal) {
-				applySongplayInlineTokens();
-			}
+	const schedule = () => {
+		if (isRNPActive() || timer !== null) return;
+		timer = setTimeout(() => {
+			timer = null;
+			applySongplayInlineTokens();
+		}, 50);
+	};
+	const observer = new MutationObserver(schedule);
+	watchDOMTargets('#page_pc_songplay, #vinyl-page-container, [class*="VinylPageContainer_"]', (targets) => {
+		observer.disconnect();
+		for (const target of targets) {
+			observer.observe(target, { attributes: true, attributeFilter: ['style'] });
+		}
+		applySongplayInlineTokens();
+	});
+	let rnpActive = isRNPActive();
+	const checkRNP = () => {
+		const active = isRNPActive();
+		if (active !== rnpActive) {
+			rnpActive = active;
+			if (!active) schedule();
 		}
 	};
-	new MutationObserver(() => {
-		if (isRNPActive()) return; // RNP 激活时不触发延时检查
-		clearTimeout(timer);
-		timer = setTimeout(check, 50);
-	}).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
+	watchDOMTargets('#rnp-view', checkRNP);
+	new MutationObserver(checkRNP).observe(document.body, { attributes: true, attributeFilter: ['class'] });
 };
 
-const refreshTheme = () => {
+let lastAppliedThemeKey = '';
+const applyThemeRefresh = () => {
 	const __t0 = performance.now();
 	updateDynamicTheme();
 	const __t1 = performance.now();
@@ -379,6 +376,13 @@ const refreshTheme = () => {
 		const fallback = (n) => defaultDynamicColor[`--md-dynamic-${mode}-${n}`].match(/\d+/g).slice(0, 3).map(Number);
 		colors = { primary: fallback('primary'), secondary: fallback('secondary'), bg: fallback('bg'), bgDarken: fallback('bg-darken') };
 	}
+
+	const __fg = foregroundOf(colors, mode === 'dark');
+	// 相同主题仍需为刚挂载或被宿主覆盖的播放页补齐令牌。
+	applySongplayInlineTokens(__fg);
+	applyNativeAppearance(colors.primary, mode);
+	const themeKey = JSON.stringify([window.mdScheme, mode, colors]);
+	if (themeKey === lastAppliedThemeKey) return;
 
 	// E3c 起点状态(与令牌同帧应用,无读取开销):fader 置为旧背景色、不透明、无过渡;
 	// 下一帧起 transition 生效,opacity 1→0 在合成线程上以显示器刷新率交叉淡出
@@ -398,17 +402,14 @@ const refreshTheme = () => {
 		// E1 四期:舞台令牌 —— 播放页/评论区的底色与前景改用我们自有名字的令牌。
 		// 实测网易云在播放页子树局部覆盖 --colorBackground/--colorBlack*(劫持全局令牌),
 		// 自有名字(--md-stage-*)无法被局部覆盖,保证播放页/评论区的深浅与模式一致。
-		const __fg = foregroundOf(colors, mode === 'dark');
 		const __bodyStyle = document.body.style;
-		__bodyStyle.setProperty('--md-stage-bg', bgTokenColor(colors, mode === 'dark'));
-		__bodyStyle.setProperty('--md-stage-fg', rgba(__fg, 1));
-		__bodyStyle.setProperty('--md-stage-fg-muted', rgba(__fg, 0.55));
-		__bodyStyle.setProperty('--md-stage-surface', mode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)');
+		setStyleProperty(__bodyStyle, '--md-stage-bg', bgTokenColor(colors, mode === 'dark'));
+		setStyleProperty(__bodyStyle, '--md-stage-fg', rgba(__fg, 1));
+		setStyleProperty(__bodyStyle, '--md-stage-fg-muted', rgba(__fg, 0.55));
+		setStyleProperty(__bodyStyle, '--md-stage-surface', mode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)');
 
-		// Q1 决议: JS 动态直写播放页内联 --colorBlack1..12, 击穿原生局部劫持
-		applySongplayInlineTokens(__fg);
-
-		tokenStyleController.innerHTML = buildTokenCSS(colors, mode);
+		const tokenCSS = buildTokenCSS(colors, mode);
+		if (tokenStyleController.textContent !== tokenCSS) tokenStyleController.textContent = tokenCSS;
 	const __t3 = performance.now();
 
 		// 强调色变量(设置面板与插件样式消费)
@@ -427,49 +428,58 @@ const refreshTheme = () => {
 				const isDark = mode === 'dark';
 				const bStyle = document.body.style;
 
-				bStyle.setProperty('--rnp-accent-color', colorRgb);
-				bStyle.setProperty('--rnp-accent-color-rgb', rgbStr);
-				bStyle.setProperty('--rnp-accent-color-dark', colorRgb);
-				bStyle.setProperty('--rnp-accent-color-dark-rgb', rgbStr);
-				bStyle.setProperty('--rnp-accent-color-light', colorRgb);
-				bStyle.setProperty('--rnp-accent-color-light-rgb', rgbStr);
+				setStyleProperty(bStyle, '--rnp-accent-color', colorRgb);
+				setStyleProperty(bStyle, '--rnp-accent-color-rgb', rgbStr);
+				setStyleProperty(bStyle, '--rnp-accent-color-dark', colorRgb);
+				setStyleProperty(bStyle, '--rnp-accent-color-dark-rgb', rgbStr);
+				setStyleProperty(bStyle, '--rnp-accent-color-light', colorRgb);
+				setStyleProperty(bStyle, '--rnp-accent-color-light-rgb', rgbStr);
 
 				if (isDark) {
 					// 暗色模式: 歌词主文字高亮纯白，次级文字淡灰
-					bStyle.setProperty('--rnp-accent-color-shade-2', '#ffffff');
-					bStyle.setProperty('--rnp-accent-color-shade-2-rgb', '255, 255, 255');
-					bStyle.setProperty('--rnp-accent-color-shade-1', 'rgba(255, 255, 255, 0.75)');
-					bStyle.setProperty('--rnp-accent-color-shade-1-rgb', '240, 240, 240');
-					bStyle.setProperty('--rnp-accent-color-on-primary', '#ffffff');
-					bStyle.setProperty('--rnp-accent-color-contrast', '#ffffff');
-					bStyle.setProperty('--rnp-accent-color-contrast-rgb', '255, 255, 255');
-					bStyle.setProperty('--rnp-accent-color-overlay', '#000000');
+					setStyleProperty(bStyle, '--rnp-accent-color-shade-2', '#ffffff');
+					setStyleProperty(bStyle, '--rnp-accent-color-shade-2-rgb', '255, 255, 255');
+					setStyleProperty(bStyle, '--rnp-accent-color-shade-1', 'rgba(255, 255, 255, 0.75)');
+					setStyleProperty(bStyle, '--rnp-accent-color-shade-1-rgb', '240, 240, 240');
+					setStyleProperty(bStyle, '--rnp-accent-color-on-primary', '#ffffff');
+					setStyleProperty(bStyle, '--rnp-accent-color-contrast', '#ffffff');
+					setStyleProperty(bStyle, '--rnp-accent-color-contrast-rgb', '255, 255, 255');
+					setStyleProperty(bStyle, '--rnp-accent-color-overlay', '#000000');
 				} else {
 					// 亮色模式: 歌词主文字深黑板岩色，次级文字深灰
-					bStyle.setProperty('--rnp-accent-color-shade-2', '#1e1e22');
-					bStyle.setProperty('--rnp-accent-color-shade-2-rgb', '30, 30, 34');
-					bStyle.setProperty('--rnp-accent-color-shade-1', 'rgba(30, 30, 34, 0.75)');
-					bStyle.setProperty('--rnp-accent-color-shade-1-rgb', '70, 70, 75');
-					bStyle.setProperty('--rnp-accent-color-on-primary', '#000000');
-					bStyle.setProperty('--rnp-accent-color-contrast', '#000000');
-					bStyle.setProperty('--rnp-accent-color-contrast-rgb', '0, 0, 0');
-					bStyle.setProperty('--rnp-accent-color-overlay', '#ffffff');
+					setStyleProperty(bStyle, '--rnp-accent-color-shade-2', '#1e1e22');
+					setStyleProperty(bStyle, '--rnp-accent-color-shade-2-rgb', '30, 30, 34');
+					setStyleProperty(bStyle, '--rnp-accent-color-shade-1', 'rgba(30, 30, 34, 0.75)');
+					setStyleProperty(bStyle, '--rnp-accent-color-shade-1-rgb', '70, 70, 75');
+					setStyleProperty(bStyle, '--rnp-accent-color-on-primary', '#000000');
+					setStyleProperty(bStyle, '--rnp-accent-color-contrast', '#000000');
+					setStyleProperty(bStyle, '--rnp-accent-color-contrast-rgb', '0, 0, 0');
+					setStyleProperty(bStyle, '--rnp-accent-color-overlay', '#ffffff');
 				}
 
 				if (colors.secondary) {
 					const [sr, sg, sb] = colors.secondary;
-					bStyle.setProperty('--rnp-accent-color-bg', `rgb(${sr}, ${sg}, ${sb})`);
-					bStyle.setProperty('--rnp-accent-color-bg-rgb', `${sr}, ${sg}, ${sb}`);
+					setStyleProperty(bStyle, '--rnp-accent-color-bg', `rgb(${sr}, ${sg}, ${sb})`);
+					setStyleProperty(bStyle, '--rnp-accent-color-bg-rgb', `${sr}, ${sg}, ${sb}`);
 				}
 			}
 
 
-		applyNativeAppearance(colors.primary, mode);
+	lastAppliedThemeKey = themeKey;
 
 	// E1 二期:阶段耗时打点(内存累积,recon meta.json 转储;上线后可移除)
 	const __w = (window.__mdStageStats ??= []);
 	__w.push(`dyn=${(__t1-__t0).toFixed(1)} engine=${(__t2-__t1).toFixed(1)} token=${(__t3-__t2).toFixed(1)} accent=${(performance.now()-__t3).toFixed(1)}`);
 	if (__w.length > 24) __w.shift();
+};
+
+let themeRefreshFrame = null;
+export const refreshTheme = () => {
+	if (themeRefreshFrame !== null) return;
+	themeRefreshFrame = requestAnimationFrame(() => {
+		themeRefreshFrame = null;
+		applyThemeRefresh();
+	});
 };
 
 // ---------------------------------------------------------------- 原生外观联动(支持 dark.skin 与 common.skin 切换)
@@ -572,6 +582,7 @@ const hookChannelMenus = () => {
 };
 
 // ---------------------------------------------------------------- 方案应用
+let requestCoverScan = () => {};
 export const applyScheme = (scheme) => {
 	window.mdScheme = scheme;
 	document.body.classList.add('material-you-theme');
@@ -587,6 +598,7 @@ export const applyScheme = (scheme) => {
 				// auto:交由 probeAndWatchAppThemeMode 判定
 				refreshThemeWithCurrentMode();
 			}
+			requestCoverScan();
 			saveThemeCacheToFile(true);
 			return;
 		}
@@ -629,11 +641,8 @@ const setThemeType = (mode) => {
 	}
 };
 const refreshThemeWithCurrentMode = () => {
-	if (!window.mdThemeType) {
-		setThemeType(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-	} else {
-		refreshTheme();
-	}
+	const mode = readNCMMode() ?? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+	setThemeType(mode);
 };
 
 		// 优先异步尝试从 BETTERNCM_PROFILE/material-you-theme-cache.json 读取上次缓存的主题色
@@ -643,6 +652,7 @@ const refreshThemeWithCurrentMode = () => {
 		let saveColorTimer = null;
 		const tryLoadThemeCache = async () => {
 			const currentScheme = getSetting('scheme', 'dynamic-default-auto');
+			const colorAtStart = window.mdCoverDominantColor;
 			if (!currentScheme.startsWith('dynamic')) {
 				// 静态配色无视缓存文件
 				return false;
@@ -657,7 +667,7 @@ const refreshThemeWithCurrentMode = () => {
 				if (!text) return false;
 				const data = JSON.parse(text);
 				if (data && typeof data.color === 'number' && Number.isFinite(data.color)) {
-					// 成功读取到文件中的主题色
+					if (window.mdScheme !== currentScheme || window.mdCoverDominantColor !== colorAtStart) return false;
 					window.mdCoverDominantColor = data.color;
 					lastSavedColor = data.color;
 					lastSavedScheme = window.mdScheme;
@@ -691,6 +701,7 @@ const refreshThemeWithCurrentMode = () => {
 		}
 
 	// ---------------------------------------------------------------- 取色源(3.1 多候选链)
+	const COVER_ROOT_SELECTOR = '#page_pc_mini_bar, #VINYL_COVER_ELEMENT_ID, .cover-container-rotate, .cover-area, .TrackInfoContainer';
 	const COVER_CANDIDATES = [
 		'#page_pc_mini_bar img',
 		'#VINYL_COVER_ELEMENT_ID img',
@@ -759,14 +770,13 @@ const updateDynamicColorFromCover = (img) => {
 	canvas.height = 48;
 	const ctx = canvas.getContext('2d');
 	ctx.drawImage(img, 0, 0, 48, 48);
-	const pixels = chunk(ctx.getImageData(0, 0, 48, 48).data, 4).map((pixel) => {
-		return ((pixel[3] << 24 >>> 0) | (pixel[0] << 16 >>> 0) | (pixel[1] << 8 >>> 0) | pixel[2]) >>> 0;
-	});
+	const pixels = rgbaToArgb(ctx.getImageData(0, 0, 48, 48).data);
 
 	const quantizedColors = QuantizerCelebi.quantize(pixels, 128);
 	const ranked = Score.score(quantizedColors);
 	const top = ranked[0];
 
+	if (!top || top === window.mdCoverDominantColor) return;
 	window.mdCoverDominantColor = top;
 	document.body.dispatchEvent(new CustomEvent('md-dominant-color-change'));
 
@@ -795,8 +805,12 @@ const updateDynamicColorFromCover = (img) => {
 			}
 		}
 		if (!targetEl) {
-			// 背景层未就绪或未进入播放页时，平滑回退到封面色
+			const changed = window.mdBGEnhancedDominantColor !== window.mdCoverDominantColor;
 			window.mdBGEnhancedDominantColor = window.mdCoverDominantColor;
+			if (changed) {
+				document.body.dispatchEvent(new CustomEvent('md-dominant-color-change'));
+				refreshTheme();
+			}
 			return;
 		}
 
@@ -806,15 +820,13 @@ const updateDynamicColorFromCover = (img) => {
 			canvas.height = 48;
 			const ctx = canvas.getContext('2d');
 			ctx.drawImage(targetEl, 0, 0, 48, 48);
-			const pixels = chunk(ctx.getImageData(0, 0, 48, 48).data, 4).map((pixel) => {
-				return ((pixel[3] << 24 >>> 0) | (pixel[0] << 16 >>> 0) | (pixel[1] << 8 >>> 0) | pixel[2]) >>> 0;
-			});
+			const pixels = rgbaToArgb(ctx.getImageData(0, 0, 48, 48).data);
 
 			const quantizedColors = QuantizerCelebi.quantize(pixels, 128);
 			const ranked = Score.score(quantizedColors);
 			const top = ranked[0];
 
-			if (top) {
+			if (top && top !== window.mdBGEnhancedDominantColor) {
 				window.mdBGEnhancedDominantColor = top;
 				document.body.dispatchEvent(new CustomEvent('md-dominant-color-change'));
 				refreshTheme();
@@ -824,36 +836,69 @@ const updateDynamicColorFromCover = (img) => {
 		}
 	};
 
-	let lastCoverSrc = '';
-	const scanCover = () => {
-		if (window.mdScheme && !window.mdScheme.startsWith('dynamic')) return;
-		const img = getCoverElement();
-		if (!img) return;
-		if (img.src === lastCoverSrc) return;
-		if (img.complete && img.naturalWidth > 0) {
-			lastCoverSrc = img.src;
-			updateDynamicColorFromCover(img);
-			// 若当前启用了播放页背景取色源，在切歌时同步尝试更新背景取色
-			if ((window.mdDynamicThemeColorSource ?? getSetting('dynamic-theme-color-source', 'cover')) === 'bg-enhanced') {
-				setTimeout(updateDynamicColorFromBuiltInBG, 200);
+		let lastCoverSrc = '';
+		let pendingCover = null;
+		let pendingCoverLoad = null;
+		let backgroundTimer = null;
+		const clearPendingCover = () => {
+			if (pendingCover) pendingCover.removeEventListener('load', pendingCoverLoad);
+			pendingCover = null;
+			pendingCoverLoad = null;
+		};
+		const scanCover = () => {
+			if (window.mdScheme && !window.mdScheme.startsWith('dynamic')) {
+				clearPendingCover();
+				return;
 			}
-		} else {
-			img.addEventListener('load', () => {
-				if (img.src === lastCoverSrc) return;
-				lastCoverSrc = img.src;
-				updateDynamicColorFromCover(img);
-				if ((window.mdDynamicThemeColorSource ?? getSetting('dynamic-theme-color-source', 'cover')) === 'bg-enhanced') {
-					setTimeout(updateDynamicColorFromBuiltInBG, 200);
+			const img = getCoverElement();
+			if (pendingCover !== img) clearPendingCover();
+			if (!img || img.src === lastCoverSrc) return;
+			if (!img.complete || img.naturalWidth === 0) {
+				if (pendingCover !== img) {
+					pendingCover = img;
+					pendingCoverLoad = () => {
+						clearPendingCover();
+						scanCover();
+					};
+					img.addEventListener('load', pendingCoverLoad, { once: true });
 				}
-			}, { once: true });
-		}
-	};
+				return;
+			}
+			clearPendingCover();
+			try {
+				updateDynamicColorFromCover(img);
+				lastCoverSrc = img.src;
+			} catch (e) {
+				return;
+			}
+			clearTimeout(backgroundTimer);
+			if ((window.mdDynamicThemeColorSource ?? getSetting('dynamic-theme-color-source', 'cover')) === 'bg-enhanced') {
+				backgroundTimer = setTimeout(() => {
+					if (window.mdScheme?.startsWith('dynamic') && (window.mdDynamicThemeColorSource ?? getSetting('dynamic-theme-color-source', 'cover')) === 'bg-enhanced') updateDynamicColorFromBuiltInBG();
+				}, 200);
+			}
+		};
 const setupCoverWatcher = () => {
 	let timer = null;
-	new MutationObserver(() => {
-		clearTimeout(timer);
-		timer = setTimeout(scanCover, 300);
-	}).observe(document.body, { childList: true, subtree: true });
+	requestCoverScan = () => {
+		if (timer !== null) return;
+		timer = setTimeout(() => {
+			timer = null;
+			scanCover();
+		}, 100);
+	};
+	const observer = new MutationObserver((records) => {
+		if (records.some((record) => record.type === 'attributes' || [...record.addedNodes, ...record.removedNodes].some((node) => (
+			node.nodeType === 1 && (node.matches('img') || node.querySelector('img'))
+		)))) requestCoverScan();
+	});
+	watchDOMTargets(COVER_ROOT_SELECTOR, (roots) => {
+		observer.disconnect();
+		for (const root of roots) {
+			observer.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ['src', 'srcset'] });
+		}
+		requestCoverScan();
+	});
 	scanCover();
 };
 
@@ -878,7 +923,7 @@ const probeAndWatchAppThemeMode = () => {
 	const update = () => {
 		if (!window.mdScheme || !window.mdScheme.endsWith('-auto')) return; // 仅 auto 跟随
 		const mode = readNCMMode() ?? systemFallback();
-		setThemeType(mode);
+		if (mode !== window.mdThemeType) setThemeType(mode);
 	};
 	new MutationObserver(update).observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
 	window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', update);
@@ -920,7 +965,7 @@ const probeAndWatchAppThemeMode = () => {
 					const skinIcon = nav.querySelector('.cmd-icon-skin');
 					if (skinIcon) {
 						const skinBadge = skinIcon.closest('[class*="BadgeWrapper"]') ?? skinIcon;
-						skinBadge.style.setProperty('display', 'none', 'important');
+						setStyleProperty(skinBadge.style, 'display', 'none', 'important');
 					}
 				};
 
@@ -1008,17 +1053,28 @@ const probeAndWatchAppThemeMode = () => {
 				// 10. 彻底隐藏删除 mini 模式按钮与相关占位
 				nav.querySelectorAll('[title="mini模式"], [title="全屏纯享"], .cmd-icon-mini, [data-log*="btn_pc_main_nav_mini"]').forEach((el) => {
 					const target = el.closest('button') ?? el.closest('.icon') ?? el;
-					target.style.setProperty('display', 'none', 'important');
+					setStyleProperty(target.style, 'display', 'none', 'important');
 				});
 			};
 
 				let iconsTimer = null;
-				const debouncedApplyIcons = () => {
-					clearTimeout(iconsTimer);
-					iconsTimer = setTimeout(applyIcons, 50);
+				const schedule = () => {
+					if (iconsTimer !== null) return;
+					iconsTimer = setTimeout(() => {
+						iconsTimer = null;
+						applyIcons();
+					}, 50);
 				};
-				applyIcons();
-				new MutationObserver(debouncedApplyIcons).observe(document.body, { childList: true, subtree: true });
+				const observer = new MutationObserver((records) => {
+					if (records.some((record) => !record.target.closest?.('#md-settings-menu-container'))) schedule();
+				});
+				watchDOMTargets('#page_pc_main_nav', (targets) => {
+					observer.disconnect();
+					for (const nav of targets) {
+						observer.observe(nav, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'title'] });
+					}
+					applyIcons();
+				});
 		};
 
 // ---------------------------------------------------------------- 问候语(保留,样式层可选消费)

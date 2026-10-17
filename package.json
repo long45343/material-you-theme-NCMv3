@@ -4,6 +4,7 @@
   "description": "Material You theme for NetEase Cloud Music 3.x (BetterNCM/chromatic)",
   "license": "GPL-3.0",
   "scripts": {
+    "test": "node --test tests/*.test.cjs",
     "build": "webpack --mode=production",
     "build:dev": "webpack --mode=development",
     "watch": "webpack --watch",

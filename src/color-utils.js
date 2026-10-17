@@ -170,6 +170,13 @@ export const getGradientFromPalette = (palette) => {
 	ans += ')';
 	return ans;
 }
+export const rgbaToArgb = (data) => {
+	const pixels = new Array(data.length / 4);
+	for (let i = 0, j = 0; i < data.length; i += 4, j++) {
+		pixels[j] = ((data[i + 3] << 24) | (data[i] << 16) | (data[i + 1] << 8) | data[i + 2]) >>> 0;
+	}
+	return pixels;
+};
 export const argb2Rgb = (x) => {
 	// const a = (x >> 24) & 0xff;
 	const r = (x >> 16) & 0xff;

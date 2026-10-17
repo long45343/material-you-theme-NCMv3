@@ -1,6 +1,6 @@
 import { getSetting, setSetting } from "./utils";
 import { schemePresets } from "./scheme-presets";
-import { applyScheme, getThemeCSSFromColor, updateDynamicTheme } from "./main";
+import { applyScheme, getThemeCSSFromColor, refreshTheme } from "./main";
 import './settings.scss';
 class MDSettings extends React.Component {
 	constructor(props) {
@@ -42,9 +42,9 @@ class MDSettings extends React.Component {
 		this.setState({ scheme: scheme.name });
 		applyScheme(scheme.name);
 		setSetting('scheme', scheme.name);
-		// E1 二期:点击侧总耗时(含同步 React 渲染 + applyScheme 全程),recon meta.json 转储
+		// 仅记录点击处理的同步阶段;applyScheme 将完整主题更新合并到下一帧,不含后续 React 提交/绘制。
 		const __w = (window.__mdStageStats ??= []);
-		__w.push(`CLICK total=${(performance.now()-__t0).toFixed(1)} (${scheme.name})`);
+		__w.push(`CLICK sync=${(performance.now()-__t0).toFixed(1)} (${scheme.name})`);
 		if (__w.length > 24) __w.shift();
 	}
 	setCustomScheme(scheme) {
@@ -71,12 +71,12 @@ class MDSettings extends React.Component {
 					<div className="md-scheme-list">
 						<div className="md-scheme-list-section-title">动态主题</div>
 						<div className="md-scheme-list-section-description">根据歌曲封面动态生成配色</div>
-						<DynamicSchemeSet name="default" activeScheme={ this.state.scheme } setScheme={ this.setScheme } />
-						<DynamicSchemeSet name="tonal-spot" activeScheme={ this.state.scheme } setScheme={ this.setScheme } />
-						<DynamicSchemeSet name="vibrant" activeScheme={ this.state.scheme } setScheme={ this.setScheme } />
-						<DynamicSchemeSet name="expressive" activeScheme={ this.state.scheme } setScheme={ this.setScheme } />
-						<DynamicSchemeSet name="fidelity" activeScheme={ this.state.scheme } setScheme={ this.setScheme } />
-						<DynamicSchemeSet name="neutral" activeScheme={ this.state.scheme } setScheme={ this.setScheme } />
+						<DynamicSchemeSet name="default" open={ this.state.open } activeScheme={ this.state.scheme } setScheme={ this.setScheme } />
+						<DynamicSchemeSet name="tonal-spot" open={ this.state.open } activeScheme={ this.state.scheme } setScheme={ this.setScheme } />
+						<DynamicSchemeSet name="vibrant" open={ this.state.open } activeScheme={ this.state.scheme } setScheme={ this.setScheme } />
+						<DynamicSchemeSet name="expressive" open={ this.state.open } activeScheme={ this.state.scheme } setScheme={ this.setScheme } />
+						<DynamicSchemeSet name="fidelity" open={ this.state.open } activeScheme={ this.state.scheme } setScheme={ this.setScheme } />
+						<DynamicSchemeSet name="neutral" open={ this.state.open } activeScheme={ this.state.scheme } setScheme={ this.setScheme } />
 					</div>
 					<CustomDynamicThemeSetting show={ this.state.scheme.startsWith('dynamic-') } />
 					<div className="md-scheme-list">
@@ -183,26 +183,29 @@ class MDSettings extends React.Component {
 	}
 }
 
-// E4-B:仅当本族方案的激活态进出、或回调/取色缓存变化时才重渲染;
+// E4-B:仅当面板开关、本族方案的激活态进出、或回调/取色缓存变化时才重渲染;
 // 其它族的 activeScheme 字符串变化(点了别的族)不触发本族重渲染。
 const DynamicSchemeSet = React.memo(function DynamicSchemeSet(props) {
 	const [cssVariables, setCssVariables] = React.useState({});
+	const cssVariablesRef = React.useRef(cssVariables);
 
 	React.useEffect(() => {
+		if (!props.open) return;
+		const body = document.body;
 		const onDominantColorChange = () => {
 			const newCssVariables = getThemeCSSFromColor(`dynamic-${props.name}`);
+			// 配色缓存命中时保留原引用,不重复触发预览渲染。
+			if (cssVariablesRef.current === newCssVariables) return;
+			cssVariablesRef.current = newCssVariables;
 			setCssVariables(newCssVariables);
 		};
-		document.body.addEventListener('md-dominant-color-change', () => {
-			onDominantColorChange();
-		});
+		body.addEventListener('md-dominant-color-change', onDominantColorChange);
+		// 关闭期间不订阅;重新打开时直接读取最新颜色,不等下一次事件。
 		onDominantColorChange();
 		return () => {
-			document.body.removeEventListener('md-dominant-color-change', () => {
-				onDominantColorChange();
-			});
+			body.removeEventListener('md-dominant-color-change', onDominantColorChange);
 		};
-	}, []);
+	}, [props.name, props.open]);
 
 	// 稳定引用:三件套 scheme 对象与 auto 回调(原先是 render 内联字面量/箭头,击穿子级 memo)
 	const darkItem = React.useMemo(() => ({ name: `dynamic-${props.name}-dark`, palette: {} }), [props.name]);
@@ -218,6 +221,7 @@ const DynamicSchemeSet = React.memo(function DynamicSchemeSet(props) {
 			<SchemeItem
 				key={`dynamic-${props.name}-dark`}
 				dynamic={true}
+				open={props.open}
 				scheme={darkItem}
 				active={ props.activeScheme === darkItem.name }
 				setScheme={ props.setScheme }
@@ -226,6 +230,7 @@ const DynamicSchemeSet = React.memo(function DynamicSchemeSet(props) {
 			<SchemeItem
 				key={`dynamic-${props.name}-light`}
 				dynamic={true}
+				open={props.open}
 				scheme={lightItem}
 				active={ props.activeScheme === lightItem.name }
 				setScheme={ props.setScheme }
@@ -234,6 +239,7 @@ const DynamicSchemeSet = React.memo(function DynamicSchemeSet(props) {
 			<SchemeItem
 				key={`dynamic-${props.name}-auto`}
 				dynamic={true}
+				open={props.open}
 				scheme={autoItem}
 				active={ props.activeScheme === autoItem.name }
 				setScheme={ setAutoScheme }
@@ -247,29 +253,34 @@ const DynamicSchemeSet = React.memo(function DynamicSchemeSet(props) {
 	const familyChanged = prev.activeScheme.startsWith(familyPrefix) !== next.activeScheme.startsWith(familyPrefix);
 	if (familyChanged) return false;
 	if (prev.activeScheme !== next.activeScheme && next.activeScheme.startsWith(familyPrefix)) return false;
-	return prev.name === next.name && prev.setScheme === next.setScheme;
+	return prev.name === next.name && prev.open === next.open && prev.setScheme === next.setScheme;
 });
 
 // E4-B:自定义比较器 —— scheme 用"名字+调色板引用"深一度比较(容忍父级每次新建包装对象),
 // 其余 props 浅比较。点击方案时仅新旧两个激活项重渲染,其余 ~16 项全部跳过。
 const SchemeItem = React.memo(function SchemeItem(props) {
 	const containerRef = React.useRef(null);
+	const appliedCssVariablesRef = React.useRef({});
 
 	React.useEffect(() => {
-		if (!props.cssVariablesOverride) return;
-		if (containerRef.current) {
-			let style = containerRef.current.style;
-			for (let i = 0; i < style.length; i++) {
-				let key = style[i];
-				if (key.startsWith('--')) {
-					style.removeProperty(key);
-				}
+		if (props.open === false || !containerRef.current) return;
+		const style = containerRef.current.style;
+		const previousCssVariables = appliedCssVariablesRef.current;
+		const nextCssVariables = props.cssVariablesOverride ?? {};
+		// 遍历上一轮的固定键列表,不在删除时遍历会缩短的 CSSStyleDeclaration。
+		Object.keys(previousCssVariables).forEach((key) => {
+			if (!Object.prototype.hasOwnProperty.call(nextCssVariables, key)) {
+				style.removeProperty(key);
 			}
-		}
-		Object.entries(props.cssVariablesOverride).forEach(([key, value]) => {
-			containerRef.current.style.setProperty(key, value);
 		});
-	}, [props.cssVariablesOverride]);
+		Object.entries(nextCssVariables).forEach(([key, value]) => {
+			if (previousCssVariables[key] !== value) {
+				style.setProperty(key, value);
+			}
+		});
+		// 关闭时保留已有预览变量,既不中断退场动画,也不重复移除/写入。
+		appliedCssVariablesRef.current = { ...nextCssVariables };
+	}, [props.cssVariablesOverride, props.open]);
 
 	return (
 		<div ref={containerRef} className={`md-scheme-item ${props.dynamic ? 'md-scheme-item-dynamic' : ''} ${props.active ? 'active' : ''}`}>
@@ -283,6 +294,7 @@ const SchemeItem = React.memo(function SchemeItem(props) {
 }, (prev, next) => {
 	if (prev.active !== next.active) return false;
 	if (prev.dynamic !== next.dynamic) return false;
+	if (prev.open !== next.open) return false;
 	if (prev.setScheme !== next.setScheme) return false;
 	if (prev.cssVariablesOverride !== next.cssVariablesOverride) return false;
 	return prev.scheme.name === next.scheme.name && prev.scheme.palette === next.scheme.palette;
@@ -476,14 +488,28 @@ class ColorField extends React.Component {
 	}
 }
 function CustomDynamicThemeSetting(props) {
-	const [dynamicThemeColorSource, setDynamicThemeColorSource] = React.useState(getSetting('dynamic-theme-color-source', 'cover'));
-	const [customDynamicThemeColor, setCustomDynamicThemeColor] = React.useState(JSON.parse(getSetting('custom-dynamic-theme-color', '[189, 230, 251]')));
+	const [dynamicThemeColorSource, setDynamicThemeColorSource] = React.useState(() => getSetting('dynamic-theme-color-source', 'cover'));
+	const [customDynamicThemeColor, setCustomDynamicThemeColor] = React.useState(() => JSON.parse(getSetting('custom-dynamic-theme-color', '[189, 230, 251]')));
+	// ColorField 的 RGB 输入会原地修改数组;单独保存快照才能正确判断颜色是否变化。
+	const customDynamicThemeColorRef = React.useRef([...customDynamicThemeColor]);
 
 	React.useEffect(() => {
 		window.mdDynamicThemeColorSource = dynamicThemeColorSource;
-		updateDynamicTheme();
+		refreshTheme();
 		document.body.dispatchEvent(new CustomEvent('md-dominant-color-change'));
 	}, [dynamicThemeColorSource]);
+
+	const setCustomColor = React.useCallback((value) => {
+		const previousColor = customDynamicThemeColorRef.current;
+		if (previousColor.length === value.length && previousColor.every((channel, index) => channel === value[index])) return;
+		const color = [...value];
+		customDynamicThemeColorRef.current = color;
+		setCustomDynamicThemeColor([...color]);
+		setSetting('custom-dynamic-theme-color', JSON.stringify(color));
+		window.mdCostomDynamicThemeColor = color;
+		refreshTheme();
+		document.body.dispatchEvent(new CustomEvent('md-dominant-color-change'));
+	}, []);
 	
 	return (
 		props.show && 
@@ -493,6 +519,7 @@ function CustomDynamicThemeSetting(props) {
 				<div className="md-select">
 					<label className="md-select-label">取色来源</label>
 					<select className="md-theme-setting-select" value={ dynamicThemeColorSource } onChange={ (e) => {
+							if (e.target.value === dynamicThemeColorSource) return;
 							setDynamicThemeColorSource(e.target.value);
 							setSetting('dynamic-theme-color-source', e.target.value);
 						} }>
@@ -504,13 +531,7 @@ function CustomDynamicThemeSetting(props) {
 				{
 					dynamicThemeColorSource === 'custom' &&
 					(
-						<ColorField color={ customDynamicThemeColor } label="自定义颜色" defaultColor={[189, 230, 251]} setColor={ (value) => {
-							setCustomDynamicThemeColor(value);
-							setSetting('custom-dynamic-theme-color', JSON.stringify(value));
-							window.mdCostomDynamicThemeColor = value;
-							updateDynamicTheme();
-							document.body.dispatchEvent(new CustomEvent('md-dominant-color-change'));
-						} } />
+						<ColorField color={ customDynamicThemeColor } label="自定义颜色" defaultColor={[189, 230, 251]} setColor={ setCustomColor } />
 					)
 				}
 			</div>
