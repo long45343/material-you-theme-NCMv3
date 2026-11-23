@@ -23,25 +23,13 @@ import { setupRipple } from './ripple.js';
 import { themeFromSourceColor, QuantizerCelebi, Hct, Score, SchemeExpressive, SchemeVibrant, SchemeMonochrome, SchemeFidelity, SchemeTonalSpot, SchemeNeutral, MaterialDynamicColors } from '@material/material-color-utilities';
 import { buildTokenCSS, rgba, mix as mixRgb, foregroundOf, FOREGROUND_ALPHA } from './theme-tokens.js';
 
-// 兼容性适配: 为依赖旧版 MaterialYouTheme 标识的第三方插件 (如 Refined Now Playing Next) 注入别名映射。
-// 必须为不可枚举属性: BetterNCM 管理器侧边栏按 Object.keys(loadedPlugins) 渲染条目,
-// 可枚举的别名会被当成第二个插件渲染成同名重复行。
-try {
-	if (typeof window !== 'undefined') {
-		window.loadedPlugins = window.loadedPlugins || {};
-		if (!window.loadedPlugins['MaterialYouTheme']) {
-			Object.defineProperty(window.loadedPlugins, 'MaterialYouTheme', {
-				configurable: true,
-				enumerable: false,
-				get() {
-						return window.loadedPlugins['material-u-theme-ncmv3'] || {
-								manifest: { name: 'MaterialYouTheme', version: '1.0.4' }
-						};
-				}
-			});
-		}
-	}
-} catch (e) {}
+// loadedPlugins['MaterialYouTheme'] 别名已在 v1.0.8 移除, 不要再加回来。
+// 历史: 旧版为了让 Refined Now Playing Next 不添加 body.no-material-you-theme 而注入了不可枚举 getter。
+// 问题: PluginMarket 用 !!loadedPlugins[slug] 判"已安装"、用 .manifest.version 判"有更新",
+// 别名会让市场上的原版 Material You 显示成 "已安装 v1.0.7 → 有更新 2.9.0" (issue #9),
+// 且从那张卡片点卸载/更新会按别名取到本插件的 pluginPath, 直接删掉本插件。
+// 核实: RNP Next 3.0.2 只是 add 该类名, 源码与产物中没有任何选择器消费它, 老版 RNP 已不兼容 3.x。
+// 若将来真需要在类名上兜底, 应在 document.body 上做, 严禁再写 loadedPlugins。
 
 // ---------------------------------------------------------------- 状态
 window.mdScheme = null;          // 当前方案名
